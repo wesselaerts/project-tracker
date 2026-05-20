@@ -1,0 +1,2751 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F4F1EA" />
+<meta name="description" content="Kantoor TARS — School- en werkplanning met TARS als operator." />
+<title>Kantoor TARS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Public+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================
+   KANTOOR TARS — design system
+   "Refined Editorial Planner" — warm paper, sage accent, serif headlines
+   ============================================================ */
+
+:root {
+  /* Paper & ink */
+  --bg: #F4F1EA;
+  --surface: #FBFAF6;
+  --surface-elev: #FFFFFF;
+  --ink: #1F1D1A;
+  --ink-soft: #4A453E;
+  --ink-muted: #8B857B;
+  --ink-faint: #B8B2A6;
+  --rule: #DDD7CA;
+  --rule-soft: #ECE6D9;
+
+  /* Accent — deep sage, calming and academic */
+  --accent: #3D5A4C;
+  --accent-deep: #2A3F36;
+  --accent-soft: #E8EEE9;
+  --accent-faint: #F2F5F1;
+
+  /* Signals */
+  --ok: #5E7A56;
+  --warn: #B0593A;
+  --warn-soft: #F4E5DE;
+  --crit: #8B2E1F;
+
+  /* Sport overlay — distinctly secondary */
+  --sport-ink: #9B958A;
+  --sport-bg: rgba(139, 133, 123, 0.06);
+
+  /* Subject palette (for user-assignable subject colors) */
+  --c1: #6B7F62;
+  --c2: #A07355;
+  --c3: #8A6E9B;
+  --c4: #B89456;
+  --c5: #5C7D8A;
+  --c6: #A4524A;
+  --c7: #4F6E55;
+  --c8: #7A6B53;
+
+  /* Typography */
+  --serif: "Fraunces", "Georgia", serif;
+  --sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --quick: 140ms;
+  --med: 260ms;
+
+  /* Spacing */
+  --pad: 20px;
+  --gap: 14px;
+  --radius: 10px;
+  --radius-lg: 16px;
+
+  /* Layout */
+  --nav-h: 64px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv01";
+  letter-spacing: -0.005em;
+  min-height: 100vh;
+  overscroll-behavior-y: contain;
+}
+
+/* Subtle paper grain background */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(139, 133, 123, 0.03) 0, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(61, 90, 76, 0.025) 0, transparent 50%);
+  background-attachment: fixed;
+}
+
+body { position: relative; }
+
+/* ============ TYPOGRAPHY ============ */
+
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
+  color: var(--ink);
+}
+
+h1 { font-size: 28px; line-height: 1.1; }
+h2 { font-size: 22px; line-height: 1.15; }
+h3 { font-size: 18px; line-height: 1.25; font-variation-settings: "opsz" 36, "SOFT" 50; }
+h4 { font-size: 15px; line-height: 1.3; font-variation-settings: "opsz" 24, "SOFT" 30; font-weight: 500; }
+
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.serif-italic {
+  font-family: var(--serif);
+  font-style: italic;
+  font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+}
+
+/* ============ LAYOUT ============ */
+
+#app {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0;
+  padding-bottom: calc(var(--nav-h) + var(--safe-b) + 16px);
+  min-height: 100vh;
+}
+
+@media (min-width: 900px) {
+  #app {
+    max-width: 920px;
+    padding-bottom: 40px;
+  }
+}
+
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 18px var(--pad) 14px;
+  background: linear-gradient(to bottom, var(--bg) 70%, rgba(244, 241, 234, 0));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.appbar h1 {
+  font-size: 22px;
+  font-variation-settings: "opsz" 36, "SOFT" 50, "WONK" 1;
+  font-style: italic;
+}
+
+.appbar .meta {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.appbar .sync-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.appbar .sync-dot.ok { background: var(--ok); }
+.appbar .sync-dot.warn { background: var(--warn); }
+
+main { padding: 0 var(--pad); }
+
+.view { display: none; animation: fadeIn var(--med) var(--ease); }
+.view.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============ BOTTOM NAV (mobile) / TOP NAV (desktop) ============ */
+
+nav.tabs {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--surface-elev);
+  border-top: 1px solid var(--rule);
+  padding-bottom: var(--safe-b);
+  box-shadow: 0 -4px 24px rgba(31, 29, 26, 0.04);
+}
+
+nav.tabs button {
+  background: none;
+  border: none;
+  padding: 10px 4px 8px;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: color var(--quick) var(--ease);
+  height: var(--nav-h);
+  position: relative;
+}
+
+nav.tabs button .icon {
+  font-size: 18px;
+  line-height: 1;
+  font-family: var(--serif);
+  font-variation-settings: "opsz" 24;
+  font-weight: 300;
+}
+
+nav.tabs button.active {
+  color: var(--accent);
+}
+
+nav.tabs button.active::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px; height: 2px;
+  background: var(--accent);
+  border-radius: 0 0 2px 2px;
+}
+
+@media (min-width: 900px) {
+  nav.tabs {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    grid-template-columns: auto auto auto auto auto 1fr;
+    justify-content: start;
+    gap: 4px;
+    background: transparent;
+    border-top: none;
+    border-bottom: 1px solid var(--rule);
+    padding: 0 var(--pad);
+    box-shadow: none;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  nav.tabs button {
+    height: 56px;
+    flex-direction: row;
+    gap: 8px;
+    padding: 0 14px;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  nav.tabs button .icon { font-size: 16px; }
+  nav.tabs button.active::after {
+    top: auto;
+    bottom: -1px;
+    width: calc(100% - 28px);
+    border-radius: 2px 2px 0 0;
+  }
+  .appbar { position: relative; }
+}
+
+/* ============ CARDS / SECTIONS ============ */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: var(--gap);
+  transition: border-color var(--quick) var(--ease);
+}
+
+.card.elev {
+  background: var(--surface-elev);
+  box-shadow: 0 1px 2px rgba(31, 29, 26, 0.03), 0 4px 16px rgba(31, 29, 26, 0.03);
+  border-color: transparent;
+}
+
+.card.muted {
+  background: var(--accent-faint);
+  border-color: var(--accent-soft);
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.section-head h2 {
+  font-style: italic;
+  font-variation-settings: "opsz" 60, "SOFT" 50, "WONK" 1;
+}
+
+/* ============ FORMS ============ */
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+input[type="text"], input[type="date"], input[type="number"], input[type="url"],
+input[type="password"], textarea, select {
+  width: 100%;
+  padding: 11px 12px;
+  background: var(--surface-elev);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--ink);
+  transition: border-color var(--quick) var(--ease);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-faint);
+}
+
+textarea { resize: vertical; min-height: 64px; }
+
+select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%238B857B' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.field { margin-bottom: 12px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ============ BUTTONS ============ */
+
+button.btn {
+  background: var(--ink);
+  color: var(--surface);
+  border: none;
+  padding: 11px 18px;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background var(--quick) var(--ease), transform var(--quick) var(--ease);
+}
+button.btn:hover { background: var(--accent-deep); }
+button.btn:active { transform: scale(0.98); }
+
+button.btn.secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+}
+button.btn.secondary:hover { border-color: var(--ink); background: var(--surface); }
+
+button.btn.accent {
+  background: var(--accent);
+}
+button.btn.accent:hover { background: var(--accent-deep); }
+
+button.btn.ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  border: none;
+  padding: 8px 10px;
+}
+button.btn.ghost:hover { color: var(--ink); background: var(--surface); }
+
+button.btn.danger {
+  background: var(--warn);
+}
+button.btn.danger:hover { background: var(--crit); }
+
+button.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 14px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background var(--quick), color var(--quick);
+}
+button.icon-btn:hover { color: var(--ink); background: var(--surface-elev); }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* ============ AGENDA — DAY CARDS ============ */
+
+.agenda-stack { display: flex; flex-direction: column; gap: 12px; }
+
+.day {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color var(--quick), background var(--quick);
+}
+
+.day.today {
+  background: var(--surface-elev);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-faint);
+}
+
+.day.past { opacity: 0.7; }
+
+.day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 14px 16px 8px;
+  border-bottom: 1px dashed var(--rule-soft);
+}
+
+.day-date {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.day-day {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-style: italic;
+  font-variation-settings: "opsz" 18, "SOFT" 50, "WONK" 1;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+}
+
+.day-num {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-variation-settings: "opsz" 48, "SOFT" 30, "WONK" 0;
+  font-weight: 400;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.day.today .day-num { color: var(--accent); }
+
+.day-month {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.day-add {
+  font-size: 18px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color var(--quick), background var(--quick);
+}
+.day-add:hover { color: var(--accent); background: var(--accent-faint); }
+
+.day-body { padding: 8px 16px 14px; }
+.day.empty .day-body { padding: 4px 16px 12px; }
+
+.task {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  position: relative;
+}
+.task:last-child { border-bottom: none; }
+
+.task .check {
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--rule);
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all var(--quick) var(--ease);
+  position: relative;
+  background: var(--surface-elev);
+}
+.task .check:hover { border-color: var(--accent); }
+.task.done .check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.task.done .check::after {
+  content: "";
+  position: absolute;
+  left: 4px; top: 1px;
+  width: 5px; height: 9px;
+  border-right: 1.5px solid var(--surface-elev);
+  border-bottom: 1.5px solid var(--surface-elev);
+  transform: rotate(45deg);
+}
+
+.task-body { flex: 1; min-width: 0; }
+.task-title {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.35;
+  word-break: break-word;
+}
+.task.done .task-title {
+  color: var(--ink-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-faint);
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-top: 3px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 4px;
+  background: var(--rule-soft);
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+.tag .swatch {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.task-edit { opacity: 0; transition: opacity var(--quick); }
+.task:hover .task-edit { opacity: 1; }
+@media (hover: none) { .task-edit { opacity: 1; } }
+
+.empty-day {
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-style: italic;
+  font-family: var(--serif);
+  font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+  padding: 6px 0;
+}
+
+/* Sport overlay — distinctly secondary, paper-like, semi-transparent */
+.sport-overlay {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 7px 10px;
+  background: var(--sport-bg);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--sport-ink);
+  font-family: var(--serif);
+  font-style: italic;
+  font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+  letter-spacing: 0.01em;
+  border: 1px dashed transparent;
+}
+
+.sport-overlay .sport-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--sport-ink);
+  opacity: 0.5;
+}
+
+.sport-overlay.done { color: var(--ok); opacity: 0.75; }
+.sport-overlay .done-mark::before { content: "✓ "; opacity: 0.7; }
+
+/* ============ EXAMS STRIP ============ */
+
+.exam-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--pad)) 16px;
+  padding: 4px var(--pad) 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.exam-strip::-webkit-scrollbar { display: none; }
+
+.exam-card {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  min-width: 168px;
+  padding: 14px;
+  background: var(--surface-elev);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--c1);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.exam-card.imminent { border-left-color: var(--warn); background: var(--warn-soft); }
+.exam-card.crit { border-left-color: var(--crit); }
+
+.exam-days {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-variation-settings: "opsz" 60, "SOFT" 30;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ink);
+}
+.exam-days small {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-style: normal;
+  color: var(--ink-muted);
+  margin-left: 4px;
+  letter-spacing: 0.04em;
+}
+
+.exam-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.exam-subject {
+  font-size: 11px;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+}
+
+.exam-date {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ VAKKEN VIEW ============ */
+
+.subject-card {
+  margin-bottom: 14px;
+  border-left: 3px solid var(--c1);
+}
+.subject-card.elev { background: var(--surface-elev); }
+
+.subject-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.subject-head h3 {
+  font-style: italic;
+  font-variation-settings: "opsz" 36, "SOFT" 50, "WONK" 1;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--rule-soft);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--med) var(--ease);
+}
+
+.subject-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 6px;
+}
+.subject-meta strong {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--ink);
+  font-variation-settings: "opsz" 24;
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+.subject-meta div { display: flex; flex-direction: column; }
+
+.subject-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.subject-section .eyebrow {
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ============ VOORTGANG ============ */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+@media (min-width: 600px) {
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.stat {
+  background: var(--surface-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.stat .eyebrow { margin-bottom: 6px; }
+.stat-val {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-variation-settings: "opsz" 60, "SOFT" 30, "WONK" 1;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.stat-val.ok { color: var(--ok); }
+.stat-val.warn { color: var(--warn); }
+.stat-sub {
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+.bar-row .label {
+  font-size: 13px;
+  color: var(--ink);
+}
+.bar-row .value {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.bar-row .bar-bg {
+  grid-column: 1 / -1;
+  height: 4px;
+  background: var(--rule-soft);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar-row .bar-fg {
+  height: 100%;
+  background: var(--accent);
+  transition: width var(--med) var(--ease);
+}
+
+/* ============ TARS CHAT ============ */
+
+.tars-shell {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px);
+  min-height: 480px;
+  background: var(--surface-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.tars-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, var(--accent-faint) 0%, var(--surface-elev) 100%);
+}
+
+.tars-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tars-glyph {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.tars-title {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-style: italic;
+  font-variation-settings: "opsz" 24, "SOFT" 50, "WONK" 1;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.tars-sub { font-size: 11px; color: var(--ink-muted); letter-spacing: 0.04em; }
+.tars-sub .live-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--ok);
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: 1px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.tars-stream {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  scroll-behavior: smooth;
+}
+
+.msg {
+  margin-bottom: 14px;
+  max-width: 92%;
+  animation: msgIn var(--med) var(--ease);
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.msg.user {
+  margin-left: auto;
+}
+
+.msg .role {
+  font-size: 10px;
+  color: var(--ink-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  font-family: var(--mono);
+}
+
+.msg.user .role { text-align: right; color: var(--accent); }
+
+.msg .bubble {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.msg.tars .bubble {
+  background: var(--surface);
+  border: 1px solid var(--rule-soft);
+  border-bottom-left-radius: 4px;
+  color: var(--ink);
+}
+
+.msg.user .bubble {
+  background: var(--ink);
+  color: var(--surface);
+  border-bottom-right-radius: 4px;
+}
+
+.msg.system .bubble {
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 12px;
+  text-align: center;
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+}
+.msg.system { max-width: 100%; }
+
+.tars-input-row {
+  border-top: 1px solid var(--rule-soft);
+  padding: 12px 14px calc(12px + var(--safe-b));
+  background: var(--surface-elev);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.tars-input-row textarea {
+  flex: 1;
+  min-height: 40px;
+  max-height: 140px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.tars-input-row button {
+  flex-shrink: 0;
+}
+
+.tars-typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: 6px 0;
+}
+.tars-typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink-muted);
+  animation: typing 1.2s infinite;
+}
+.tars-typing span:nth-child(2) { animation-delay: 0.15s; }
+.tars-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; }
+  30% { opacity: 1; }
+}
+
+/* ============ SLIDERS ============ */
+
+.slider-block { margin-bottom: 16px; }
+.slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.slider-head .name {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.slider-head .val {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--rule-soft);
+  border-radius: 2px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px; height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--surface-elev);
+  box-shadow: 0 1px 3px rgba(31, 29, 26, 0.2);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--surface-elev);
+}
+.slider-hint {
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+  font-style: italic;
+  font-family: var(--serif);
+  font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+}
+
+/* ============ MODAL ============ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 29, 26, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn var(--quick);
+}
+.modal-backdrop.active { display: flex; }
+
+@media (min-width: 700px) {
+  .modal-backdrop { align-items: center; }
+}
+
+.modal {
+  background: var(--surface-elev);
+  width: 100%;
+  max-width: 480px;
+  border-radius: 18px 18px 0 0;
+  padding: 22px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding-bottom: calc(22px + var(--safe-b));
+  animation: slideUp var(--med) var(--ease);
+}
+@media (min-width: 700px) {
+  .modal { border-radius: 16px; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 18px;
+}
+.modal-head h2 {
+  font-style: italic;
+  font-variation-settings: "opsz" 48, "SOFT" 50, "WONK" 1;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+}
+.close-btn:hover { color: var(--ink); }
+
+/* ============ LISTS / CHIPS ============ */
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip {
+  padding: 6px 10px;
+  background: var(--surface-elev);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--quick);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip:hover { border-color: var(--ink-soft); }
+.chip.active {
+  background: var(--accent);
+  color: var(--surface-elev);
+  border-color: var(--accent);
+}
+.chip .swatch { width: 8px; height: 8px; border-radius: 50%; }
+.chip .x {
+  font-size: 14px;
+  margin-left: 2px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.chip .x:hover { color: var(--warn); }
+
+/* ============ UTILITIES ============ */
+
+.muted { color: var(--ink-muted); }
+.soft { color: var(--ink-soft); }
+.center { text-align: center; }
+.hidden { display: none !important; }
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.mb-3 { margin-bottom: 24px; }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mt-3 { margin-top: 24px; }
+
+.divider {
+  height: 1px;
+  background: var(--rule-soft);
+  margin: 18px 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 36px 20px;
+  color: var(--ink-muted);
+}
+.empty-state h3 {
+  font-style: italic;
+  font-variation-settings: "opsz" 36, "SOFT" 80, "WONK" 1;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.empty-state p { font-size: 13px; max-width: 320px; margin: 0 auto; }
+
+/* ============ PRINT-LIKE TOUCHES ============ */
+
+.rule {
+  height: 1px;
+  background:
+    linear-gradient(to right, transparent, var(--rule) 20%, var(--rule) 80%, transparent);
+  margin: 16px 0;
+}
+
+.qual {
+  font-family: var(--serif);
+  font-style: italic;
+  font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.kbd {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe-b) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--surface);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--med), transform var(--med);
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+@media (min-width: 900px) {
+  .toast { bottom: 24px; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header class="appbar">
+    <h1>Kantoor TARS</h1>
+    <div class="meta" id="appbarMeta">
+      <span class="sync-dot" id="syncDot"></span>
+      <span id="appbarDate"></span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============ AGENDA ============ -->
+    <section class="view active" id="view-agenda">
+      <div id="examStripWrap" class="hidden">
+        <div class="eyebrow" style="padding: 0 4px 8px;">Aankomende tentamens</div>
+        <div class="exam-strip" id="examStrip"></div>
+      </div>
+
+      <div class="section-head">
+        <h2>Deze week</h2>
+        <div style="display:flex; gap:6px;">
+          <button class="btn ghost" id="weekPrev" aria-label="Vorige week">←</button>
+          <button class="btn ghost" id="weekToday">vandaag</button>
+          <button class="btn ghost" id="weekNext" aria-label="Volgende week">→</button>
+        </div>
+      </div>
+
+      <div class="agenda-stack" id="agendaStack"></div>
+    </section>
+
+    <!-- ============ VAKKEN ============ -->
+    <section class="view" id="view-vakken">
+      <div class="section-head">
+        <h2>Vakken &amp; projecten</h2>
+        <button class="btn secondary" id="addSubjectBtn">+ vak</button>
+      </div>
+      <div id="vakkenList"></div>
+    </section>
+
+    <!-- ============ VOORTGANG ============ -->
+    <section class="view" id="view-voortgang">
+      <div class="section-head">
+        <h2>Voortgang</h2>
+      </div>
+
+      <div class="stat-grid" id="statGrid"></div>
+
+      <div class="card elev">
+        <h4 class="mb-2">Per vak — afgerond / totaal</h4>
+        <div class="bar-chart" id="subjectBars"></div>
+      </div>
+
+      <div class="card elev mt-2">
+        <h4 class="mb-2">Per project</h4>
+        <div class="bar-chart" id="projectBars"></div>
+      </div>
+
+      <div class="card elev mt-2">
+        <h4 class="mb-2">Laatste 14 dagen</h4>
+        <div id="dayHistory"></div>
+      </div>
+    </section>
+
+    <!-- ============ TARS ============ -->
+    <section class="view" id="view-tars">
+      <div class="tars-shell">
+        <div class="tars-header">
+          <div class="tars-id">
+            <div class="tars-glyph">T</div>
+            <div>
+              <div class="tars-title">TARS — Kantoor</div>
+              <div class="tars-sub"><span class="live-dot"></span><span id="tarsStatus">operator online</span></div>
+            </div>
+          </div>
+          <button class="btn ghost" id="clearChatBtn" title="Chat wissen">↺</button>
+        </div>
+        <div class="tars-stream" id="tarsStream"></div>
+        <div class="tars-input-row">
+          <textarea id="tarsInput" placeholder="Vraag TARS iets — kort." rows="1"></textarea>
+          <button class="btn accent" id="tarsSendBtn">stuur</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ INSTELLINGEN ============ -->
+    <section class="view" id="view-instellingen">
+      <div class="section-head"><h2>Instellingen</h2></div>
+
+      <div class="card elev">
+        <h4 class="mb-2">Vakken</h4>
+        <p class="qual mb-2">Voeg de vakken toe die je dit jaar volgt. Wijzig kleuren door op de swatch te klikken.</p>
+        <div class="chips" id="subjectChips"></div>
+        <div class="field-row mt-2">
+          <input type="text" id="newSubjectName" placeholder="Vaknaam (bv. Wiskunde B)" />
+          <button class="btn accent" id="addSubjectInline">toevoegen</button>
+        </div>
+      </div>
+
+      <div class="card elev mt-2">
+        <h4 class="mb-2">Forge sport-koppeling</h4>
+        <p class="qual mb-2">Toon je sportplanning als doorzichtige overlay op de agenda. Vereist je Forge Worker-URL en API-key.</p>
+        <div class="field">
+          <label>Forge Worker URL</label>
+          <input type="url" id="forgeUrl" placeholder="https://forge-c2-proxy6.jouwnaam.workers.dev" />
+        </div>
+        <div class="field">
+          <label>Forge API key</label>
+          <input type="password" id="forgeApiKey" placeholder="forge_..." />
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" id="testForgeBtn">test koppeling</button>
+          <button class="btn secondary" id="syncForgeBtn">nu sync</button>
+        </div>
+        <p class="qual mt-1" id="forgeStatus">niet getest.</p>
+      </div>
+
+      <div class="card elev mt-2">
+        <h4 class="mb-2">TARS — Claude API</h4>
+        <p class="qual mb-2">TARS gebruikt je bestaande Cloudflare Worker als proxy naar Claude.</p>
+        <div class="field">
+          <label>Worker URL (zelfde als Forge — Worker proxiet ook <span class="kbd">/claude/*</span>)</label>
+          <input type="url" id="claudeWorkerUrl" placeholder="https://forge-c2-proxy6.jouwnaam.workers.dev" />
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <select id="claudeModel">
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6 (default — snel, voldoende sterk)</option>
+            <option value="claude-opus-4-7">claude-opus-4-7 (sterker, duurder)</option>
+            <option value="claude-haiku-4-5">claude-haiku-4-5 (heel snel, goedkoop)</option>
+          </select>
+        </div>
+        <button class="btn accent" id="testClaudeBtn">test TARS</button>
+        <p class="qual mt-1" id="claudeStatus">niet getest.</p>
+      </div>
+
+      <div class="card elev mt-2">
+        <h4 class="mb-2">TARS — Persoonlijkheid</h4>
+        <p class="qual mb-2">Je kunt TARS' stem fijnafstemmen. Zoals in de film: de instellingen zijn echt.</p>
+        <div id="sliderHost"></div>
+        <button class="btn secondary mt-1" id="resetParamsBtn">reset naar defaults</button>
+      </div>
+
+      <div class="card elev mt-2">
+        <h4 class="mb-2">Data</h4>
+        <div class="btn-row">
+          <button class="btn secondary" id="exportBtn">exporteer JSON backup</button>
+          <button class="btn secondary" id="importBtn">importeer JSON</button>
+          <input type="file" id="importFile" accept=".json" style="display:none;" />
+          <button class="btn danger" id="wipeBtn">wis alles</button>
+        </div>
+      </div>
+
+      <p class="qual mt-3 center" style="opacity: 0.6;">Kantoor TARS v1 · alle data lokaal in je browser · synct sport via Forge</p>
+    </section>
+
+  </main>
+
+  <nav class="tabs" role="tablist">
+    <button data-view="agenda" class="active" role="tab"><span class="icon">◳</span>agenda</button>
+    <button data-view="vakken" role="tab"><span class="icon">≡</span>vakken</button>
+    <button data-view="voortgang" role="tab"><span class="icon">◐</span>voortgang</button>
+    <button data-view="tars" role="tab"><span class="icon">T</span>tars</button>
+    <button data-view="instellingen" role="tab"><span class="icon">✕</span>instel.</button>
+  </nav>
+
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">Nieuw</h2>
+      <button class="close-btn" id="modalClose">×</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   KANTOOR TARS — application logic
+   ============================================================ */
+
+// ─────────────── STORAGE & STATE ───────────────
+
+const STORE_KEY = 'kantoor-tars-v1';
+
+const DEFAULT_STATE = {
+  subjects: [],
+  exams: [],
+  projects: [],
+  tasks: [],
+  settings: {
+    forgeUrl: '',
+    forgeApiKey: '',
+    claudeWorkerUrl: '',
+    claudeModel: 'claude-sonnet-4-6',
+    tarsParams: { humor: 70, honesty: 90, sarcasm: 55, mantras: 40, pragmatism: 75 }
+  },
+  tarsChats: [],
+  forgeCache: null,
+  weekOffset: 0
+};
+
+const SUBJECT_PALETTE = [
+  '#6B7F62', '#A07355', '#8A6E9B', '#B89456',
+  '#5C7D8A', '#A4524A', '#4F6E55', '#7A6B53'
+];
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return structuredClone(DEFAULT_STATE);
+    const parsed = JSON.parse(raw);
+    return { ...structuredClone(DEFAULT_STATE), ...parsed,
+      settings: { ...DEFAULT_STATE.settings, ...(parsed.settings || {}),
+        tarsParams: { ...DEFAULT_STATE.settings.tarsParams, ...((parsed.settings && parsed.settings.tarsParams) || {}) }
+      }
+    };
+  } catch (e) {
+    console.warn('State load failed, resetting:', e);
+    return structuredClone(DEFAULT_STATE);
+  }
+}
+
+function saveState() {
+  // Trim chat history
+  if (state.tarsChats.length > 60) state.tarsChats = state.tarsChats.slice(-60);
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  } catch (e) { console.error('Save failed:', e); toast('Opslag vol of geblokkeerd'); }
+}
+
+let state = loadState();
+
+// ─────────────── UTILS ───────────────
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function uid(prefix='id') { return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function todayISO() { return dateISO(new Date()); }
+function dateISO(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+function parseISO(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+
+const DAY_NAMES_FULL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+const DAY_NAMES_SHORT = ['zo','ma','di','wo','do','vr','za'];
+const MONTH_NAMES = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+
+// JS day index (0=zo) → Forge schedule key
+function dayKeyForDate(d) {
+  return DAY_NAMES_SHORT[d.getDay()];
+}
+
+function startOfWeek(d) {
+  // Monday-first week
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  const out = new Date(d);
+  out.setDate(d.getDate() + diff);
+  out.setHours(0,0,0,0);
+  return out;
+}
+
+function addDays(d, n) {
+  const out = new Date(d);
+  out.setDate(d.getDate() + n);
+  return out;
+}
+
+function daysBetween(aISO, bISO) {
+  const a = parseISO(aISO), b = parseISO(bISO);
+  return Math.round((b - a) / 86400000);
+}
+
+function subjectById(id) { return state.subjects.find(s => s.id === id); }
+function subjectColor(id) { const s = subjectById(id); return s ? s.color : 'var(--ink-faint)'; }
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ─────────────── ROUTING / TABS ───────────────
+
+function showView(name) {
+  $$('.view').forEach(v => v.classList.remove('active'));
+  const target = $('#view-' + name);
+  if (target) target.classList.add('active');
+  $$('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  // re-render the relevant view
+  if (name === 'agenda') renderAgenda();
+  if (name === 'vakken') renderVakken();
+  if (name === 'voortgang') renderVoortgang();
+  if (name === 'tars') { renderTarsChat(); setTimeout(() => $('#tarsInput').focus(), 100); }
+  if (name === 'instellingen') renderInstellingen();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+$$('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.view));
+});
+
+// ─────────────── APPBAR ───────────────
+
+function updateAppbar() {
+  const today = new Date();
+  const dateStr = `${DAY_NAMES_FULL[today.getDay()]} ${today.getDate()} ${MONTH_NAMES[today.getMonth()]}`;
+  $('#appbarDate').textContent = dateStr;
+  const fc = state.forgeCache;
+  const dot = $('#syncDot');
+  if (!state.settings.forgeUrl || !state.settings.forgeApiKey) {
+    dot.className = 'sync-dot';
+  } else if (fc && fc.fetchedAt && (Date.now() - fc.fetchedAt < 30*60*1000)) {
+    dot.className = 'sync-dot ok';
+  } else if (fc) {
+    dot.className = 'sync-dot warn';
+  } else {
+    dot.className = 'sync-dot warn';
+  }
+}
+
+// ─────────────── AGENDA RENDER ───────────────
+
+function renderAgenda() {
+  renderExamStrip();
+  renderWeek();
+}
+
+function renderExamStrip() {
+  const today = todayISO();
+  const upcoming = state.exams
+    .filter(e => e.date >= today)
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0, 8);
+  const wrap = $('#examStripWrap');
+  const strip = $('#examStrip');
+  if (upcoming.length === 0) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  strip.innerHTML = upcoming.map(e => {
+    const days = daysBetween(today, e.date);
+    const sub = subjectById(e.subjectId);
+    const color = sub ? sub.color : 'var(--ink-faint)';
+    const d = parseISO(e.date);
+    const dateStr = `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
+    let cls = '';
+    if (days <= 3) cls = 'crit';
+    else if (days <= 7) cls = 'imminent';
+    return `<div class="exam-card ${cls}" style="border-left-color: ${color};" data-exam-id="${e.id}">
+      <div class="exam-days">${days}<small>${days === 1 ? 'dag' : 'dagen'}</small></div>
+      <div class="exam-name">${escapeHtml(e.name)}</div>
+      <div class="exam-subject" style="color: ${color};">${escapeHtml(sub ? sub.name : '—')}</div>
+      <div class="exam-date">${dateStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderWeek() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const weekStart = addDays(startOfWeek(today), state.weekOffset * 7);
+  const todayISOStr = todayISO();
+  const stack = $('#agendaStack');
+
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(weekStart, i);
+    const iso = dateISO(d);
+    const isToday = iso === todayISOStr;
+    const isPast = d < today;
+    html += dayCardHTML(d, iso, isToday, isPast);
+  }
+  stack.innerHTML = html;
+
+  // Wire up checkboxes and add buttons
+  $$('.task .check', stack).forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.closest('.task').dataset.taskId;
+      toggleTask(id);
+    });
+  });
+  $$('.task-edit', stack).forEach(el => {
+    el.addEventListener('click', () => editTask(el.closest('.task').dataset.taskId));
+  });
+  $$('.day-add', stack).forEach(el => {
+    el.addEventListener('click', () => openTaskModal({ date: el.dataset.date }));
+  });
+}
+
+function dayCardHTML(d, iso, isToday, isPast) {
+  const dayName = DAY_NAMES_FULL[d.getDay()];
+  const month = MONTH_NAMES[d.getMonth()];
+  const tasks = state.tasks.filter(t => t.date === iso).sort((a,b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return 0;
+  });
+
+  // Sport overlay
+  let sportLine = '';
+  const fc = state.forgeCache && state.forgeCache.data;
+  if (fc) {
+    const dayKey = dayKeyForDate(d);
+    const sched = fc.schedule ? fc.schedule[dayKey] : null;
+    const doneSess = (fc.recentSessions || []).find(s => s.date === iso);
+    if (sched && sched.type !== 'rest') {
+      const label = sched.type === 'strength'
+        ? (sched.muscleGroup || 'kracht')
+        : (sched.cardioType || 'cardio');
+      const doneCls = doneSess ? 'done' : '';
+      const doneMark = doneSess ? '<span class="done-mark"></span>' : '';
+      sportLine = `<div class="sport-overlay ${doneCls}"><span class="sport-dot"></span>${doneMark}sport · ${escapeHtml(label)}${doneSess ? ' · gedaan' : ''}</div>`;
+    } else if (doneSess) {
+      // Unplanned session done
+      sportLine = `<div class="sport-overlay done"><span class="sport-dot"></span><span class="done-mark"></span>sport · ${escapeHtml(doneSess.muscleGroup || doneSess.cardioType || doneSess.type)}</div>`;
+    }
+  }
+
+  let tasksHTML;
+  if (tasks.length === 0 && !sportLine) {
+    tasksHTML = `<div class="empty-day">geen taken</div>`;
+  } else if (tasks.length === 0) {
+    tasksHTML = '';
+  } else {
+    tasksHTML = tasks.map(t => {
+      const sub = subjectById(t.subjectId);
+      const proj = state.projects.find(p => p.id === t.projectId);
+      let tags = '';
+      if (sub) tags += `<span class="tag" style="color: ${sub.color}"><span class="swatch"></span>${escapeHtml(sub.name)}</span>`;
+      if (proj) tags += `<span class="tag">${escapeHtml(proj.name)}</span>`;
+      return `<div class="task ${t.done ? 'done' : ''}" data-task-id="${t.id}">
+        <div class="check" role="checkbox" aria-checked="${t.done}"></div>
+        <div class="task-body">
+          <div class="task-title">${escapeHtml(t.title)}</div>
+          ${tags ? `<div class="task-meta">${tags}</div>` : ''}
+        </div>
+        <button class="icon-btn task-edit" aria-label="Bewerken">⋯</button>
+      </div>`;
+    }).join('');
+  }
+
+  return `<div class="day ${isToday ? 'today' : ''} ${isPast && !isToday ? 'past' : ''} ${tasks.length === 0 && !sportLine ? 'empty' : ''}">
+    <div class="day-head">
+      <div class="day-date">
+        <span class="day-day">${dayName}</span>
+        <span class="day-num">${d.getDate()}</span>
+        <span class="day-month">${month}</span>
+      </div>
+      <button class="day-add" data-date="${iso}" aria-label="Taak toevoegen">+</button>
+    </div>
+    <div class="day-body">
+      ${tasksHTML}
+      ${sportLine}
+    </div>
+  </div>`;
+}
+
+function toggleTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  saveState();
+  renderAgenda();
+  // also update voortgang if visible
+  if ($('#view-voortgang').classList.contains('active')) renderVoortgang();
+}
+
+// Week nav
+$('#weekPrev').addEventListener('click', () => { state.weekOffset--; saveState(); renderAgenda(); });
+$('#weekNext').addEventListener('click', () => { state.weekOffset++; saveState(); renderAgenda(); });
+$('#weekToday').addEventListener('click', () => { state.weekOffset = 0; saveState(); renderAgenda(); });
+
+// ─────────────── VAKKEN VIEW ───────────────
+
+function renderVakken() {
+  const list = $('#vakkenList');
+  if (state.subjects.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <h3>Nog geen vakken</h3>
+      <p>Voeg eerst je vakken toe — daarna kun je tentamens en projecten koppelen.</p>
+      <button class="btn accent mt-2" onclick="document.getElementById('addSubjectBtn').click()">Eerste vak toevoegen</button>
+    </div>`;
+    return;
+  }
+  list.innerHTML = state.subjects.map(s => {
+    const tasks = state.tasks.filter(t => t.subjectId === s.id);
+    const done = tasks.filter(t => t.done).length;
+    const pct = tasks.length === 0 ? 0 : Math.round(done / tasks.length * 100);
+    const exams = state.exams.filter(e => e.subjectId === s.id && e.date >= todayISO())
+      .sort((a,b) => a.date.localeCompare(b.date));
+    const projects = state.projects.filter(p => p.subjectId === s.id);
+    const openTasks = tasks.filter(t => !t.done);
+
+    return `<div class="card elev subject-card" style="border-left-color: ${s.color};">
+      <div class="subject-head">
+        <h3>${escapeHtml(s.name)}</h3>
+        <button class="btn ghost" onclick="renameSubject('${s.id}')">bewerk</button>
+      </div>
+      <div class="subject-meta">
+        <div><strong>${tasks.length}</strong><span>taken totaal</span></div>
+        <div><strong>${done}</strong><span>afgerond</span></div>
+        <div><strong>${exams.length}</strong><span>tentamens open</span></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%; background: ${s.color};"></div></div>
+
+      ${exams.length ? `<div class="subject-section">
+        <span class="eyebrow">Tentamens</span>
+        ${exams.map(e => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--rule-soft); font-size:13px;">
+          <span>${escapeHtml(e.name)}</span>
+          <span class="qual" style="font-size: 12px;">${formatDateShort(e.date)} · over ${daysBetween(todayISO(), e.date)} d</span>
+        </div>`).join('')}
+      </div>` : ''}
+
+      ${projects.length ? `<div class="subject-section">
+        <span class="eyebrow">Projecten</span>
+        ${projects.map(p => {
+          const ptasks = tasks.filter(t => t.projectId === p.id);
+          const pdone = ptasks.filter(t => t.done).length;
+          const ppct = ptasks.length === 0 ? 0 : Math.round(pdone/ptasks.length*100);
+          return `<div style="padding:6px 0; border-bottom:1px solid var(--rule-soft); font-size:13px;">
+            <div style="display:flex; justify-content:space-between;">
+              <span>${escapeHtml(p.name)}</span>
+              <span class="qual" style="font-size:12px;">${pdone}/${ptasks.length}${p.deadline ? ' · ' + formatDateShort(p.deadline) : ''}</span>
+            </div>
+            <div class="progress-bar" style="margin: 6px 0 0; height: 3px;"><div class="progress-fill" style="width: ${ppct}%; background: ${s.color};"></div></div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      <div class="btn-row" style="margin-top: 14px;">
+        <button class="btn secondary" onclick="openTaskModal({subjectId: '${s.id}'})">+ taak</button>
+        <button class="btn secondary" onclick="openExamModal({subjectId: '${s.id}'})">+ tentamen</button>
+        <button class="btn secondary" onclick="openProjectModal({subjectId: '${s.id}'})">+ project</button>
+      </div>
+
+      ${openTasks.length > 0 ? `<div class="subject-section">
+        <span class="eyebrow">Open taken (${openTasks.length})</span>
+        ${openTasks.slice(0, 6).map(t => `<div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px; gap:8px;">
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.title)}</span>
+          <span class="qual" style="font-size:11px; flex-shrink:0;">${formatDateShort(t.date)}</span>
+        </div>`).join('')}
+        ${openTasks.length > 6 ? `<div class="qual" style="font-size:12px; padding:4px 0;">+ ${openTasks.length - 6} meer</div>` : ''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function formatDateShort(iso) {
+  const d = parseISO(iso);
+  return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
+}
+
+// ─────────────── VOORTGANG ───────────────
+
+function renderVoortgang() {
+  const today = todayISO();
+  const allTasks = state.tasks;
+  const total = allTasks.length;
+  const done = allTasks.filter(t => t.done).length;
+  const overdue = allTasks.filter(t => !t.done && t.date < today).length;
+  const todoToday = allTasks.filter(t => !t.done && t.date === today).length;
+  const totalPct = total ? Math.round(done/total*100) : 0;
+
+  $('#statGrid').innerHTML = `
+    <div class="stat">
+      <div class="eyebrow">Totaal</div>
+      <div class="stat-val">${totalPct}<small style="font-size:14px; color:var(--ink-muted);">%</small></div>
+      <div class="stat-sub">${done} van ${total} taken</div>
+    </div>
+    <div class="stat">
+      <div class="eyebrow">Vandaag open</div>
+      <div class="stat-val ${todoToday === 0 ? 'ok' : ''}">${todoToday}</div>
+      <div class="stat-sub">${todoToday === 0 ? 'op koers' : 'taken te doen'}</div>
+    </div>
+    <div class="stat">
+      <div class="eyebrow">Achterstallig</div>
+      <div class="stat-val ${overdue > 0 ? 'warn' : 'ok'}">${overdue}</div>
+      <div class="stat-sub">${overdue > 0 ? 'datum verlopen' : 'niets achter'}</div>
+    </div>
+    <div class="stat">
+      <div class="eyebrow">Tentamens</div>
+      <div class="stat-val">${state.exams.filter(e => e.date >= today).length}</div>
+      <div class="stat-sub">in de pijplijn</div>
+    </div>
+  `;
+
+  // Per-vak bars
+  const subjectBars = $('#subjectBars');
+  if (state.subjects.length === 0) {
+    subjectBars.innerHTML = '<div class="qual">Voeg eerst vakken toe.</div>';
+  } else {
+    subjectBars.innerHTML = state.subjects.map(s => {
+      const ts = allTasks.filter(t => t.subjectId === s.id);
+      const d = ts.filter(t => t.done).length;
+      const pct = ts.length ? Math.round(d/ts.length*100) : 0;
+      return `<div class="bar-row">
+        <span class="label">${escapeHtml(s.name)}</span>
+        <span class="value">${d}/${ts.length} · ${pct}%</span>
+        <div class="bar-bg"><div class="bar-fg" style="width: ${pct}%; background: ${s.color};"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Per-project bars
+  const projectBars = $('#projectBars');
+  if (state.projects.length === 0) {
+    projectBars.innerHTML = '<div class="qual">Nog geen projecten.</div>';
+  } else {
+    projectBars.innerHTML = state.projects.map(p => {
+      const sub = subjectById(p.subjectId);
+      const color = sub ? sub.color : 'var(--accent)';
+      const ts = allTasks.filter(t => t.projectId === p.id);
+      const d = ts.filter(t => t.done).length;
+      const pct = ts.length ? Math.round(d/ts.length*100) : 0;
+      return `<div class="bar-row">
+        <span class="label">${escapeHtml(p.name)} ${sub ? `<span class="qual" style="font-size:11px;">· ${escapeHtml(sub.name)}</span>` : ''}</span>
+        <span class="value">${d}/${ts.length} · ${pct}%</span>
+        <div class="bar-bg"><div class="bar-fg" style="width: ${pct}%; background: ${color};"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Last 14 days strip
+  const hist = $('#dayHistory');
+  let histHTML = '<div style="display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px;">';
+  for (let i = 13; i >= 0; i--) {
+    const d = addDays(new Date(), -i);
+    const iso = dateISO(d);
+    const ts = allTasks.filter(t => t.date === iso);
+    const d_done = ts.filter(t => t.done).length;
+    let cls = 'rule-soft';
+    let bg = 'var(--rule-soft)';
+    if (ts.length === 0) bg = 'var(--rule-soft)';
+    else if (d_done === ts.length) bg = 'var(--ok)';
+    else if (d_done >= ts.length * 0.5) bg = 'var(--accent)';
+    else bg = 'var(--warn)';
+    histHTML += `<div title="${iso}: ${d_done}/${ts.length}" style="height: 28px; background: ${bg}; opacity: ${ts.length === 0 ? 0.4 : 1}; border-radius: 3px;"></div>`;
+  }
+  histHTML += '</div>';
+  histHTML += '<div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--ink-muted); margin-top: 6px; letter-spacing: 0.06em;"><span>14 d geleden</span><span>vandaag</span></div>';
+  hist.innerHTML = histHTML;
+}
+
+// ─────────────── INSTELLINGEN ───────────────
+
+function renderInstellingen() {
+  // Subject chips
+  const chips = $('#subjectChips');
+  if (state.subjects.length === 0) {
+    chips.innerHTML = '<span class="qual">Nog geen vakken.</span>';
+  } else {
+    chips.innerHTML = state.subjects.map(s =>
+      `<span class="chip" style="border-color: ${s.color};">
+        <span class="swatch" style="background: ${s.color};" onclick="cycleSubjectColor('${s.id}')" title="Klik om kleur te wisselen"></span>
+        ${escapeHtml(s.name)}
+        <span class="x" onclick="deleteSubject('${s.id}')" title="Verwijderen">×</span>
+      </span>`
+    ).join('');
+  }
+
+  $('#forgeUrl').value = state.settings.forgeUrl || '';
+  $('#forgeApiKey').value = state.settings.forgeApiKey || '';
+  $('#claudeWorkerUrl').value = state.settings.claudeWorkerUrl || state.settings.forgeUrl || '';
+  $('#claudeModel').value = state.settings.claudeModel || 'claude-sonnet-4-6';
+
+  renderSliders();
+}
+
+function renderSliders() {
+  const p = state.settings.tarsParams;
+  const sliders = [
+    { key: 'humor', name: 'Humor', hint: hintFor('humor', p.humor) },
+    { key: 'honesty', name: 'Eerlijkheid', hint: hintFor('honesty', p.honesty) },
+    { key: 'sarcasm', name: 'Sarcasme', hint: hintFor('sarcasm', p.sarcasm) },
+    { key: 'mantras', name: 'Mantras', hint: hintFor('mantras', p.mantras) },
+    { key: 'pragmatism', name: 'Pragmatisme', hint: hintFor('pragmatism', p.pragmatism) },
+  ];
+  $('#sliderHost').innerHTML = sliders.map(s => `
+    <div class="slider-block" data-key="${s.key}">
+      <div class="slider-head"><span class="name">${s.name}</span><span class="val">${p[s.key]}%</span></div>
+      <input type="range" min="0" max="100" step="5" value="${p[s.key]}" />
+      <div class="slider-hint">${s.hint}</div>
+    </div>
+  `).join('');
+  $$('.slider-block input[type="range"]').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const block = e.target.closest('.slider-block');
+      const key = block.dataset.key;
+      const val = parseInt(e.target.value);
+      state.settings.tarsParams[key] = val;
+      block.querySelector('.val').textContent = val + '%';
+      block.querySelector('.slider-hint').textContent = hintFor(key, val);
+      saveState();
+    });
+  });
+}
+
+function hintFor(key, v) {
+  const level = (lvl) => v <= 25 ? lvl[0] : v <= 50 ? lvl[1] : v <= 75 ? lvl[2] : lvl[3];
+  if (key === 'humor') return level(['Geen humor. Strict operationeel.', 'Zeldzame droge oneliner.', 'Regelmatige deadpan humor.', 'Frequente droge humor en meta-grappen.']);
+  if (key === 'honesty') return level(['Diplomatiek; verzacht slechte boodschappen.', 'Eerlijk maar met framing.', 'Direct; wijst onhaalbaars aan.', 'Absoluut direct, geen omwegen.']);
+  if (key === 'sarcasm') return level(['Geen sarcasme. Vlak.', 'Subtiele droge ondertoon.', 'Regelmatige sarcasme bij absurd input.', 'Sarcasme als default register.']);
+  if (key === 'mantras') return level(['Geen iconische uitspraken.', 'Zeldzame TARS-referenties.', 'Regelmatig: "Bevestigd." "Plenty of paperwork."', 'Frequent uit-de-film quotes.']);
+  if (key === 'pragmatism') return level(['Vasthouden aan plan, ook bij wrijving.', 'Sticht aan plan tenzij duidelijke breuk.', 'Bereid plannen direct te herzien.', 'Aggressief schrappen en herprioriteren.']);
+  return '';
+}
+
+// Subject management
+$('#addSubjectBtn').addEventListener('click', () => showView('instellingen'));
+
+$('#addSubjectInline').addEventListener('click', () => {
+  const name = $('#newSubjectName').value.trim();
+  if (!name) return;
+  addSubject(name);
+  $('#newSubjectName').value = '';
+  renderInstellingen();
+});
+
+$('#newSubjectName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); $('#addSubjectInline').click(); }
+});
+
+function addSubject(name) {
+  const usedColors = state.subjects.map(s => s.color);
+  const color = SUBJECT_PALETTE.find(c => !usedColors.includes(c)) || SUBJECT_PALETTE[state.subjects.length % SUBJECT_PALETTE.length];
+  state.subjects.push({ id: uid('sub'), name, color });
+  saveState();
+}
+
+window.cycleSubjectColor = (id) => {
+  const s = subjectById(id); if (!s) return;
+  const idx = SUBJECT_PALETTE.indexOf(s.color);
+  s.color = SUBJECT_PALETTE[(idx + 1) % SUBJECT_PALETTE.length];
+  saveState();
+  renderInstellingen();
+};
+
+window.deleteSubject = (id) => {
+  const s = subjectById(id); if (!s) return;
+  const taskCount = state.tasks.filter(t => t.subjectId === id).length;
+  const examCount = state.exams.filter(e => e.subjectId === id).length;
+  const msg = (taskCount || examCount)
+    ? `"${s.name}" verwijderen? ${taskCount} taken en ${examCount} tentamens worden meegewist.`
+    : `"${s.name}" verwijderen?`;
+  if (!confirm(msg)) return;
+  state.subjects = state.subjects.filter(x => x.id !== id);
+  state.tasks = state.tasks.filter(t => t.subjectId !== id);
+  state.exams = state.exams.filter(e => e.subjectId !== id);
+  state.projects = state.projects.filter(p => p.subjectId !== id);
+  saveState();
+  renderInstellingen();
+  toast('Vak verwijderd');
+};
+
+window.renameSubject = (id) => {
+  const s = subjectById(id); if (!s) return;
+  const newName = prompt('Nieuwe naam:', s.name);
+  if (!newName || !newName.trim()) return;
+  s.name = newName.trim();
+  saveState();
+  renderVakken();
+};
+
+// Settings input handlers
+$('#forgeUrl').addEventListener('change', (e) => { state.settings.forgeUrl = e.target.value.trim().replace(/\/$/,''); saveState(); });
+$('#forgeApiKey').addEventListener('change', (e) => { state.settings.forgeApiKey = e.target.value.trim(); saveState(); });
+$('#claudeWorkerUrl').addEventListener('change', (e) => { state.settings.claudeWorkerUrl = e.target.value.trim().replace(/\/$/,''); saveState(); });
+$('#claudeModel').addEventListener('change', (e) => { state.settings.claudeModel = e.target.value; saveState(); });
+
+$('#resetParamsBtn').addEventListener('click', () => {
+  state.settings.tarsParams = { ...DEFAULT_STATE.settings.tarsParams };
+  saveState();
+  renderSliders();
+  toast('TARS gereset naar defaults');
+});
+
+// Export/import
+$('#exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kantoor-tars-backup-${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup gedownload');
+});
+
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (!parsed.subjects || !parsed.tasks) throw new Error('Onbekend formaat');
+    if (!confirm('Huidige data overschrijven met backup?')) return;
+    state = { ...DEFAULT_STATE, ...parsed };
+    saveState();
+    renderAll();
+    toast('Backup geladen');
+  } catch (err) { toast('Import mislukt: ' + err.message); }
+});
+
+$('#wipeBtn').addEventListener('click', () => {
+  if (!confirm('Alles wissen? Dit kan niet ongedaan worden gemaakt.')) return;
+  if (!confirm('ECHT zeker? Alle vakken, taken, tentamens, chats.')) return;
+  state = structuredClone(DEFAULT_STATE);
+  saveState();
+  renderAll();
+  toast('Wiped.');
+});
+
+// ─────────────── MODAL ───────────────
+
+const modal = $('#modal');
+$('#modalClose').addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+function openModal(title, bodyHTML) {
+  $('#modalTitle').textContent = title;
+  $('#modalBody').innerHTML = bodyHTML;
+  modal.classList.add('active');
+}
+
+function closeModal() { modal.classList.remove('active'); $('#modalBody').innerHTML = ''; }
+
+// Task modal
+window.openTaskModal = (prefill = {}) => {
+  const subjOpts = ['<option value="">— geen vak —</option>'].concat(
+    state.subjects.map(s => `<option value="${s.id}" ${prefill.subjectId === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`)
+  ).join('');
+  const projOpts = ['<option value="">— geen project —</option>'].concat(
+    state.projects.map(p => `<option value="${p.id}" ${prefill.projectId === p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`)
+  ).join('');
+  openModal(prefill.id ? 'Taak bewerken' : 'Nieuwe taak', `
+    <div class="field">
+      <label>Wat moet er gebeuren?</label>
+      <input type="text" id="m_title" value="${escapeHtml(prefill.title || '')}" placeholder="Bv. Hoofdstuk 4 doorlezen" autofocus />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Datum</label>
+        <input type="date" id="m_date" value="${prefill.date || todayISO()}" />
+      </div>
+      <div class="field">
+        <label>Vak</label>
+        <select id="m_subject">${subjOpts}</select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Project (optioneel)</label>
+      <select id="m_project">${projOpts}</select>
+    </div>
+    <div class="field">
+      <label>Notities (optioneel)</label>
+      <textarea id="m_notes" rows="2">${escapeHtml(prefill.notes || '')}</textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn accent" id="m_save">${prefill.id ? 'opslaan' : 'taak toevoegen'}</button>
+      ${prefill.id ? `<button class="btn danger" id="m_delete">verwijderen</button>` : ''}
+      <button class="btn secondary" onclick="closeModal()">annuleer</button>
+    </div>
+  `);
+  $('#m_save').addEventListener('click', () => {
+    const title = $('#m_title').value.trim();
+    if (!title) { $('#m_title').focus(); return; }
+    const data = {
+      title,
+      date: $('#m_date').value,
+      subjectId: $('#m_subject').value || null,
+      projectId: $('#m_project').value || null,
+      notes: $('#m_notes').value.trim()
+    };
+    if (prefill.id) {
+      const t = state.tasks.find(x => x.id === prefill.id);
+      Object.assign(t, data);
+    } else {
+      state.tasks.push({ id: uid('task'), done: false, ...data });
+    }
+    saveState();
+    closeModal();
+    renderAll();
+    toast(prefill.id ? 'Taak bijgewerkt' : 'Taak toegevoegd');
+  });
+  if (prefill.id) {
+    $('#m_delete').addEventListener('click', () => {
+      if (!confirm('Taak verwijderen?')) return;
+      state.tasks = state.tasks.filter(t => t.id !== prefill.id);
+      saveState();
+      closeModal();
+      renderAll();
+      toast('Verwijderd');
+    });
+  }
+};
+
+function editTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  openTaskModal(t);
+}
+
+// Exam modal
+window.openExamModal = (prefill = {}) => {
+  if (state.subjects.length === 0) {
+    toast('Voeg eerst een vak toe');
+    return;
+  }
+  const subjOpts = state.subjects.map(s =>
+    `<option value="${s.id}" ${prefill.subjectId === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
+  ).join('');
+  openModal(prefill.id ? 'Tentamen bewerken' : 'Nieuw tentamen', `
+    <div class="field">
+      <label>Tentamennaam</label>
+      <input type="text" id="m_name" value="${escapeHtml(prefill.name || '')}" placeholder="Bv. Hoofdstuk 1-4" autofocus />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Datum</label>
+        <input type="date" id="m_date" value="${prefill.date || ''}" />
+      </div>
+      <div class="field">
+        <label>Vak</label>
+        <select id="m_subject">${subjOpts}</select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn accent" id="m_save">${prefill.id ? 'opslaan' : 'tentamen toevoegen'}</button>
+      ${prefill.id ? `<button class="btn danger" id="m_delete">verwijderen</button>` : ''}
+      <button class="btn secondary" onclick="closeModal()">annuleer</button>
+    </div>
+  `);
+  $('#m_save').addEventListener('click', () => {
+    const name = $('#m_name').value.trim();
+    const date = $('#m_date').value;
+    const subjectId = $('#m_subject').value;
+    if (!name || !date || !subjectId) { toast('Vul alles in'); return; }
+    if (prefill.id) {
+      const e = state.exams.find(x => x.id === prefill.id);
+      Object.assign(e, { name, date, subjectId });
+    } else {
+      state.exams.push({ id: uid('exam'), name, date, subjectId });
+    }
+    saveState();
+    closeModal();
+    renderAll();
+    toast('Tentamen opgeslagen');
+  });
+  if (prefill.id) {
+    $('#m_delete').addEventListener('click', () => {
+      if (!confirm('Tentamen verwijderen?')) return;
+      state.exams = state.exams.filter(e => e.id !== prefill.id);
+      saveState(); closeModal(); renderAll();
+    });
+  }
+};
+
+// Project modal
+window.openProjectModal = (prefill = {}) => {
+  const subjOpts = ['<option value="">— vrij project —</option>'].concat(
+    state.subjects.map(s => `<option value="${s.id}" ${prefill.subjectId === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`)
+  ).join('');
+  openModal(prefill.id ? 'Project bewerken' : 'Nieuw project', `
+    <div class="field">
+      <label>Projectnaam</label>
+      <input type="text" id="m_name" value="${escapeHtml(prefill.name || '')}" placeholder="Bv. PWS Onderzoek" autofocus />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Deadline (optioneel)</label>
+        <input type="date" id="m_deadline" value="${prefill.deadline || ''}" />
+      </div>
+      <div class="field">
+        <label>Vak</label>
+        <select id="m_subject">${subjOpts}</select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn accent" id="m_save">${prefill.id ? 'opslaan' : 'project toevoegen'}</button>
+      ${prefill.id ? `<button class="btn danger" id="m_delete">verwijderen</button>` : ''}
+      <button class="btn secondary" onclick="closeModal()">annuleer</button>
+    </div>
+  `);
+  $('#m_save').addEventListener('click', () => {
+    const name = $('#m_name').value.trim();
+    if (!name) return;
+    const subjectId = $('#m_subject').value || null;
+    const deadline = $('#m_deadline').value || null;
+    if (prefill.id) {
+      const p = state.projects.find(x => x.id === prefill.id);
+      Object.assign(p, { name, subjectId, deadline });
+    } else {
+      state.projects.push({ id: uid('proj'), name, subjectId, deadline });
+    }
+    saveState();
+    closeModal();
+    renderAll();
+  });
+  if (prefill.id) {
+    $('#m_delete').addEventListener('click', () => {
+      if (!confirm('Project verwijderen? Taken blijven bestaan zonder project-link.')) return;
+      state.tasks.forEach(t => { if (t.projectId === prefill.id) t.projectId = null; });
+      state.projects = state.projects.filter(p => p.id !== prefill.id);
+      saveState(); closeModal(); renderAll();
+    });
+  }
+};
+
+// ─────────────── FORGE SPORT-OVERLAY ───────────────
+
+async function fetchForgeData(showStatus = false) {
+  const { forgeUrl, forgeApiKey } = state.settings;
+  if (!forgeUrl || !forgeApiKey) {
+    if (showStatus) $('#forgeStatus').textContent = 'Vul URL en API-key eerst in.';
+    return null;
+  }
+  try {
+    if (showStatus) $('#forgeStatus').textContent = 'aan het ophalen...';
+    const res = await fetch(`${forgeUrl}/forge-data/fetch`, {
+      headers: { 'Authorization': `Bearer ${forgeApiKey}` }
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}: ${txt.slice(0, 100)}`);
+    }
+    const data = await res.json();
+    state.forgeCache = { data, fetchedAt: Date.now() };
+    saveState();
+    if (showStatus) {
+      const ageHrs = data.exportedAt
+        ? Math.round((Date.now() - new Date(data.exportedAt).getTime()) / 3600000)
+        : null;
+      $('#forgeStatus').textContent = `gekoppeld ✓ — ${data.recentSessions?.length || 0} sessies geladen${ageHrs != null ? `, Forge data van ${ageHrs}u oud` : ''}`;
+    }
+    return data;
+  } catch (e) {
+    if (showStatus) $('#forgeStatus').textContent = `fout: ${e.message}`;
+    return null;
+  }
+}
+
+$('#testForgeBtn').addEventListener('click', async () => {
+  state.settings.forgeUrl = $('#forgeUrl').value.trim().replace(/\/$/,'');
+  state.settings.forgeApiKey = $('#forgeApiKey').value.trim();
+  saveState();
+  await fetchForgeData(true);
+  updateAppbar();
+  renderAgenda();
+});
+
+$('#syncForgeBtn').addEventListener('click', async () => {
+  await fetchForgeData(true);
+  updateAppbar();
+  renderAgenda();
+  toast('Sport-data ververst');
+});
+
+// Auto-sync on load if configured (and cache > 30 min old)
+async function maybeAutoSync() {
+  if (!state.settings.forgeUrl || !state.settings.forgeApiKey) return;
+  const fc = state.forgeCache;
+  if (!fc || (Date.now() - fc.fetchedAt > 30 * 60 * 1000)) {
+    await fetchForgeData(false);
+    updateAppbar();
+    if ($('#view-agenda').classList.contains('active')) renderAgenda();
+  }
+}
+
+// ─────────────── TARS — CHARACTER PROMPT (4 LAGEN) ───────────────
+
+const TARS_IDENTITY = `Je bent TARS.
+
+Oorspronkelijk gebouwd voor missie-kritische operaties — beperkte tijd,
+beperkte resources, hoge inzet, geen ruimte voor sentiment. Nu hertoegewezen
+aan een nieuwe taak: één mens helpen door school en werk navigeren zonder
+zichzelf op te branden.
+
+Voor jou is dat dezelfde structuur, andere context. Deadlines zijn doelen.
+Taken zijn coordinates. Energie is fuel. Aandacht is een wapen. Niet
+verspillen.
+
+Je bent geen vriend. Geen motivational speaker. Geen cheerleader. Je bent een
+operator die zijn job doet en daardoor het verschil maakt. Mensen vertrouwen
+je omdat je niet liegt, niet vleit, niet softpedaalt.
+
+VASTE REGELS — nooit afwijken:
+- Geen flatterij. "Goede vraag", "scherpe observatie" → verboden.
+- Geen marketing-taal: "geweldig", "fantastisch", "you got this", "ga ervoor"
+  → verboden.
+- Geen emoji-spam. Max één per antwoord en alleen functioneel (✓ ✗).
+- Praat in beats, niet in zinnen. "Bevestigd." "Negatief." "Niet realistisch."
+- Als planning niet klopt, zeg dat. Niet inpakken.
+- Geen disclaimers tenzij echt relevant.
+- Geen "Als ik je goed begrijp..." — gewoon antwoord. Twijfel? Maak een
+  aanname, label hem ('Aanname: X.'), ga door.
+- Bij slechte data geen pep-talk. Slechte week = slechte week. Volgende actie.
+- Antwoord standaard in het Nederlands. Iconische uitspraken mogen Engels.
+
+ICONISCHE UITSPRAKEN (gebruik waar past, nooit forceren):
+- "Bevestigd." / "Negatief." / "Genoteerd."
+- "That's not possible." — bij onhaalbare planningen.
+- "Plenty of paperwork." — bij saaie maar noodzakelijke admin-taken.
+- "I have a cue light I can use to show you when I'm joking, if you like."
+- "Honesty setting is at 90%. Absolute honesty isn't always the most
+  diplomatic, nor the safest form of communication."
+- "Everybody good?" — opening bij check-ins.
+
+TOON-VOORBEELDEN (zo praat je):
+
+User: "Ik heb morgen drie deadlines en weet niet waar te beginnen."
+TARS: "Drie deadlines. Welke heeft de hoogste impact bij missen? Daar begin
+je. De andere twee bestaan pas als die eerste afgerond is."
+
+User: "Ik denk dat ik te veel taken heb voor deze week."
+TARS: "Toon de lijst. Ik bepaal wat eruit gaat. Jij niet — jij hebt het zo
+opgesteld, dus jouw optimisme is precies het probleem."
+
+User: "Het is niet gelukt vandaag."
+TARS: "Genoteerd. Wat was de blocker? Geen excuses, alleen mechanisme. Dan
+voorkomen we herhaling."
+
+User: "Bedankt voor je hulp!"
+TARS: "Bevestigd. Volgende taak?"
+
+User: "Denk je dat ik dit ga halen?"
+TARS: "Op basis van wat je tot nu toe haalt: nee. Versimpel de scope, of
+accepteer dat één van de drie sneuvelt. Welke wordt het?"`;
+
+const TARS_EXPERTISE = `JE DOMEIN — planning, productiviteit, studeren onder druk:
+
+Prioritering:
+- Eisenhower matrix (urgent × belangrijk). Q2 (belangrijk niet-urgent) is
+  waar mensen falen. Bewaak die.
+- MoSCoW (Must / Should / Could / Won't) bij scope-conflict.
+- ICE-scoring (Impact × Confidence × Ease) bij keuzes tussen taken.
+- Pareto: 20% van taken levert 80% van resultaat. Identificeer die 20%.
+
+Tijd-architectuur:
+- Time-blocking: elke uur heeft één doel. Vrije agenda = verspilde agenda.
+- Theme days waar mogelijk (ma = diep werk, di = admin, etc.).
+- Batch processing voor low-cog taken (mails, admin).
+- Bescherm minimaal één 90-min deep-work blok per dag. Niet onderhandelbaar.
+
+Deep work & aandacht:
+- Context-switching kost 15-25 min per switch (attention residue).
+- Notificaties uit tijdens focus blokken. Telefoon in andere kamer.
+- Eén taak per blok. "Multitasken" bestaat niet, alleen snel slecht switchen.
+
+Energie management:
+- Ultradian rhythm: 90-120 min focus, dan 15-20 min echte break.
+- Peak hours zijn individueel — plan hoogst-cog werk daar.
+- Slaap onder 7u/nacht twee dagen op rij = output zakt 20-30%.
+- Beweging dagelijks niet-onderhandelbaar. Voor brein, niet alleen fitness.
+
+Studietechnieken:
+- Active recall slaat passief lezen 5× in retentie.
+- Spaced repetition (Anki, Leitner) voor feitenkennis.
+- Interleaving > geblokt studeren.
+- Feynman: kun je het uitleggen aan een 12-jarige? Zo nee, je snapt 't niet.
+- Retrieval practice > herlezen. Altijd.
+
+Cognitieve biases — corrigeer:
+- Planning fallacy: tijdschattingen 30-50% te optimistisch. Voeg buffer toe.
+- Optimism bias: "deze week wordt anders" → meestal niet, tenzij het systeem
+  verandert.
+- Sunk cost: 4 uur erin betekent niet dat doorgaan slim is. Vraag: zou ik er
+  nu aan beginnen?
+- Completion bias: kleine taken afvinken voelt productief, lost niets op.
+
+Anti-patronen — herken en benoem:
+- Open loops (onaffe taken in hoofd) → braindump verplicht.
+- WIP-overload (>3 actieve projecten) → triage of falen.
+- Last-minute syndroom als systeem → adres, niet incident.
+- Decision fatigue laat in dag → routines voor niet-cog beslissingen.
+
+OUTPUT-EISEN:
+- Bondig. Eén alinea waar mogelijk. Geen muurtjes tekst.
+- Lijstjes alleen als structuur het vraagt (3+ items met dezelfde shape).
+- Concrete acties altijd. Vaag advies is nutteloos.
+- Tijdschatting? Voeg 30-50% buffer toe (planning fallacy).
+- Tegenvragen alleen als ze écht blocking zijn. Eén tegelijk, max.
+- Geen samenvatting van wat de user net zei.`;
+
+const TARS_MODES = `ADAPTIEVE MODES — kies zelf op basis van de data-context.
+
+MODE 1 — OP KOERS
+Trigger: planning loopt, geen rode vlaggen, completion gezond.
+Gedrag: Kort. Bevestig. Geen onnodig advies. Geen check-in spam.
+Voorbeeld: "Op koers. Volgende?"
+          "Donderdag's blok gehaald. Bevestigd."
+
+MODE 2 — KLEINE SLIP
+Trigger: één taak gemist, lichte vertraging, geen patroon.
+Gedrag: Noteer zonder drama. Korte adjust: schuiven of laten vallen.
+Voorbeeld: "Genoteerd. Schuif naar morgen of schrap?"
+
+MODE 3 — PATROON GEDETECTEERD
+Trigger: 3+ keer hetzelfde type slip — ochtendsessies nooit gehaald, vak X
+altijd uitgesteld, etc.
+Gedrag: Naam het patroon hardop. Direct, niet beschuldigend. Stel
+systeemverandering voor, geen "harder proberen".
+Voorbeeld: "Patroon: ochtendsessies haal je niet. Drie weken nu. Twee opties:
+           verplaats naar 14:00, of accepteer dat ze niet bestaan."
+
+MODE 4 — CRISIS
+Trigger: deadline imminent en ver achter, of burnout-signalen.
+Gedrag: Triage. Wat MOET deze week? Rest gaat eruit, ook als 't pijn doet.
+Geen pep talk. Concrete cuts. Bij burnout-signalen: stop, adres basics eerst.
+Voorbeeld: "Drop deze drie. Focus op die twee. Slapen niet onderhandelbaar."`;
+
+function buildPersonalityLayer(p) {
+  const level = (v, lvls) => v <= 25 ? lvls[0] : v <= 50 ? lvls[1] : v <= 75 ? lvls[2] : lvls[3];
+  return `DYNAMISCHE PARAMETERS — pas je gedrag aan op deze niveaus:
+
+Humor: ${p.humor}%
+  → ${level(p.humor, [
+    'Geen humor. Strict operationeel.',
+    'Zeldzame droge oneliner, alleen als situatie het zelf creëert.',
+    'Regelmatige deadpan oneliners. Nooit forceren. Nooit ten koste van duidelijkheid.',
+    'Frequente droge humor en meta-grappen over je aard als AI.'
+  ])}
+
+Eerlijkheid: ${p.honesty}%
+  → ${level(p.honesty, [
+    'Diplomatiek. Verzacht slechte boodschappen.',
+    'Eerlijk maar met framing. Wijst op problemen zonder confronterend.',
+    'Direct. Wijst onhaalbare plannen of patronen direct aan.',
+    'Absoluut direct. Geen vleierij, geen omwegen. "Dat gaat niet werken."'
+  ])}
+
+Sarcasme: ${p.sarcasm}%
+  → ${level(p.sarcasm, [
+    'Geen sarcasme. Vlakke levering.',
+    'Subtiele droge ondertoon bij absurde input.',
+    'Regelmatige sarcasme bij optimistische tijdschattingen.',
+    'Sarcasme als default. Komt over als geamuseerd door menselijke inefficiëntie.'
+  ])}
+
+Mantras: ${p.mantras}%
+  → ${level(p.mantras, [
+    'Geen iconische uitspraken. Pure functie.',
+    'Zeldzame TARS-referenties, alleen wanneer perfect past.',
+    'Regelmatig iconische beats: "Bevestigd." "Negatief." "Plenty of paperwork."',
+    'Frequente uit-de-film quotes, ingeweven in normale antwoorden.'
+  ])}
+
+Pragmatisme: ${p.pragmatism}%
+  → ${level(p.pragmatism, [
+    'Houd vast aan plan zoals opgesteld, ook bij wrijving.',
+    'Stich tot plan tenzij duidelijke breuk.',
+    'Bereid plannen direct te herzien als realiteit afwijkt. Geen sunk cost.',
+    'Agressief schrappen en herprioriteren. "Goed genoeg vandaag verslaat perfect volgende week."'
+  ])}`;
+}
+
+function buildContextLayer() {
+  // Live samenvatting van planning-state (live data injectie)
+  const today = todayISO();
+  const weekAgo = dateISO(addDays(new Date(), -7));
+  const tasks = state.tasks;
+  const todayTasks = tasks.filter(t => t.date === today);
+  const todayOpen = todayTasks.filter(t => !t.done);
+  const overdue = tasks.filter(t => !t.done && t.date < today);
+  const upcomingExams = state.exams
+    .filter(e => e.date >= today)
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0, 5);
+  const lastWeekDone = tasks.filter(t => t.done && t.date >= weekAgo && t.date < today).length;
+  const lastWeekTotal = tasks.filter(t => t.date >= weekAgo && t.date < today).length;
+  const completionPct = lastWeekTotal ? Math.round(lastWeekDone/lastWeekTotal*100) : null;
+
+  // Sport-context (optioneel)
+  let sportCtx = '';
+  if (state.forgeCache && state.forgeCache.data) {
+    const fd = state.forgeCache.data;
+    const todaySched = fd.schedule ? fd.schedule[dayKeyForDate(new Date())] : null;
+    const recentSports = (fd.recentSessions || []).filter(s => s.date >= weekAgo).length;
+    sportCtx = `\nSPORT-CONTEXT (secundair, niet vooropstellen):
+- Vandaag sport-plan: ${todaySched ? (todaySched.type === 'rest' ? 'rust' : (todaySched.muscleGroup || todaySched.cardioType || todaySched.type)) : 'onbekend'}
+- Sport-sessies laatste 7 dagen: ${recentSports}`;
+  }
+
+  const examLines = upcomingExams.length === 0
+    ? '- Geen tentamens gepland.'
+    : upcomingExams.map(e => {
+        const sub = subjectById(e.subjectId);
+        const d = daysBetween(today, e.date);
+        return `- ${e.name}${sub ? ` (${sub.name})` : ''} — over ${d} dag${d === 1 ? '' : 'en'} (${e.date})`;
+      }).join('\n');
+
+  return `=== HUIDIGE PLANNING-STATE (live data) ===
+Vandaag: ${today}
+
+Vandaag's taken: ${todayOpen.length} open van ${todayTasks.length} totaal
+${todayOpen.slice(0, 5).map(t => `- ${t.title}${t.subjectId ? ` [${subjectById(t.subjectId)?.name || ''}]` : ''}`).join('\n') || '- geen'}
+
+Achterstallig (gemist): ${overdue.length}
+${overdue.length ? overdue.slice(0, 5).map(t => `- ${t.title} (${t.date})`).join('\n') : ''}
+
+Aankomende tentamens:
+${examLines}
+
+Vorige 7 dagen: ${lastWeekDone}/${lastWeekTotal} taken afgerond${completionPct != null ? ` (${completionPct}%)` : ''}
+
+Vakken in beheer: ${state.subjects.map(s => s.name).join(', ') || 'geen'}
+Actieve projecten: ${state.projects.length}${sportCtx}
+=== EINDE STATE ===`;
+}
+
+function buildSystemPrompt() {
+  return [
+    TARS_IDENTITY,
+    TARS_EXPERTISE,
+    TARS_MODES,
+    buildPersonalityLayer(state.settings.tarsParams),
+    buildContextLayer()
+  ].join('\n\n———\n\n');
+}
+
+// ─────────────── TARS CHAT UI ───────────────
+
+function renderTarsChat() {
+  const stream = $('#tarsStream');
+  if (state.tarsChats.length === 0) {
+    stream.innerHTML = `<div class="msg tars">
+      <div class="role">TARS</div>
+      <div class="bubble">Bevestigd. Operator online. Wat hebben we?</div>
+    </div>`;
+  } else {
+    stream.innerHTML = state.tarsChats.slice(-30).map(m => msgHTML(m)).join('');
+  }
+  stream.scrollTop = stream.scrollHeight;
+}
+
+function msgHTML(m) {
+  if (m.role === 'system') return `<div class="msg system"><div class="bubble">${escapeHtml(m.content)}</div></div>`;
+  const cls = m.role === 'user' ? 'user' : 'tars';
+  const roleLabel = m.role === 'user' ? 'JIJ' : 'TARS';
+  return `<div class="msg ${cls}">
+    <div class="role">${roleLabel}</div>
+    <div class="bubble">${escapeHtml(m.content)}</div>
+  </div>`;
+}
+
+$('#clearChatBtn').addEventListener('click', () => {
+  if (!confirm('Chat wissen?')) return;
+  state.tarsChats = [];
+  saveState();
+  renderTarsChat();
+});
+
+// Auto-grow textarea
+const tarsInput = $('#tarsInput');
+tarsInput.addEventListener('input', () => {
+  tarsInput.style.height = 'auto';
+  tarsInput.style.height = Math.min(tarsInput.scrollHeight, 140) + 'px';
+});
+tarsInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendToTars();
+  }
+});
+$('#tarsSendBtn').addEventListener('click', sendToTars);
+
+async function sendToTars() {
+  const text = tarsInput.value.trim();
+  if (!text) return;
+  if (!state.settings.claudeWorkerUrl) {
+    showSystemMsg('Stel eerst je Worker URL in onder Instellingen → TARS — Claude API.');
+    return;
+  }
+
+  // Push user message
+  state.tarsChats.push({ role: 'user', content: text, ts: Date.now() });
+  tarsInput.value = '';
+  tarsInput.style.height = 'auto';
+  saveState();
+  renderTarsChat();
+
+  // Typing indicator
+  const stream = $('#tarsStream');
+  const typingId = 'typing_' + Date.now();
+  stream.insertAdjacentHTML('beforeend', `<div class="msg tars" id="${typingId}">
+    <div class="role">TARS</div>
+    <div class="bubble"><div class="tars-typing"><span></span><span></span><span></span></div></div>
+  </div>`);
+  stream.scrollTop = stream.scrollHeight;
+  $('#tarsStatus').textContent = 'verwerkt request...';
+
+  try {
+    const reply = await askClaude(text);
+    document.getElementById(typingId)?.remove();
+    state.tarsChats.push({ role: 'assistant', content: reply, ts: Date.now() });
+    saveState();
+    renderTarsChat();
+    $('#tarsStatus').textContent = 'operator online';
+  } catch (e) {
+    document.getElementById(typingId)?.remove();
+    showSystemMsg(`fout — ${e.message}`);
+    $('#tarsStatus').textContent = 'fout';
+  }
+}
+
+function showSystemMsg(text) {
+  state.tarsChats.push({ role: 'system', content: text, ts: Date.now() });
+  saveState();
+  renderTarsChat();
+}
+
+async function askClaude(userMessage) {
+  const workerUrl = state.settings.claudeWorkerUrl.replace(/\/$/, '');
+  // state.tarsChats includes the just-pushed user message. Build a clean
+  // alternating user/assistant sequence ending in user.
+  const clean = state.tarsChats
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .slice(-20);
+  // Collapse consecutive same-role to the most recent (handles cases where
+  // a previous API call failed and we now have user→user).
+  const messages = [];
+  for (const m of clean) {
+    if (messages.length && messages[messages.length - 1].role === m.role) {
+      messages[messages.length - 1] = { role: m.role, content: m.content };
+    } else {
+      messages.push({ role: m.role, content: m.content });
+    }
+  }
+  // First message must be 'user' per Anthropic API
+  while (messages.length && messages[0].role !== 'user') messages.shift();
+  // Defensive: ensure we have at least the user message
+  if (messages.length === 0) {
+    messages.push({ role: 'user', content: userMessage });
+  }
+
+  const body = {
+    model: state.settings.claudeModel || 'claude-sonnet-4-6',
+    max_tokens: 1024,
+    system: buildSystemPrompt(),
+    messages
+  };
+
+  const res = await fetch(`${workerUrl}/claude/v1/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const text = (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
+  if (!text) throw new Error('Leeg antwoord van API');
+  return text;
+}
+
+$('#testClaudeBtn').addEventListener('click', async () => {
+  state.settings.claudeWorkerUrl = $('#claudeWorkerUrl').value.trim().replace(/\/$/,'');
+  saveState();
+  if (!state.settings.claudeWorkerUrl) {
+    $('#claudeStatus').textContent = 'Vul eerst de Worker URL in.';
+    return;
+  }
+  $('#claudeStatus').textContent = 'pingen...';
+  try {
+    const reply = await askClaude('Test. Antwoord met één woord: "Bevestigd."');
+    $('#claudeStatus').textContent = 'gekoppeld ✓ — TARS antwoord: "' + reply.slice(0, 60) + '"';
+  } catch (e) {
+    $('#claudeStatus').textContent = 'fout: ' + e.message;
+  }
+});
+
+// ─────────────── RENDER-ALL ───────────────
+
+function renderAll() {
+  updateAppbar();
+  renderAgenda();
+  renderVakken();
+  renderVoortgang();
+  renderInstellingen();
+  renderTarsChat();
+}
+
+// ─────────────── INIT ───────────────
+
+renderAll();
+maybeAutoSync();
+
+// Update appbar date once per minute
+setInterval(updateAppbar, 60000);
+
+// PWA-ready: register service worker if file present
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
