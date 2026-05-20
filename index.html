@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#F4F1EA" />
 <meta name="description" content="Kantoor TARS — School- en werkplanning met TARS als operator." />
 <title>Kantoor TARS</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='%231F1D1A'><rect x='4' y='10' width='6' height='46' rx='1'/><rect x='12' y='10' width='6' height='46' rx='1'/><rect x='20' y='10' width='6' height='46' rx='1'/><rect x='28' y='10' width='6' height='46' rx='1'/></g><rect x='4' y='22' width='30' height='3' fill='%233D5A4C'/><g transform='translate(38,26) rotate(-4)'><rect x='0' y='0' width='22' height='28' rx='1' fill='%23FBFAF6' stroke='%231F1D1A' stroke-width='1.2'/><circle cx='3' cy='3' r='0.8' fill='%231F1D1A'/><circle cx='8' cy='3' r='0.8' fill='%231F1D1A'/><circle cx='13' cy='3' r='0.8' fill='%231F1D1A'/><circle cx='18' cy='3' r='0.8' fill='%231F1D1A'/><line x1='3' y1='13' x2='16' y2='13' stroke='%238B857B' stroke-width='0.7'/><line x1='3' y1='17' x2='18' y2='17' stroke='%238B857B' stroke-width='0.7'/><rect x='3' y='7' width='3' height='3' fill='none' stroke='%233D5A4C' stroke-width='0.8'/><path d='M3.5 8.5 L4.5 9.5 L6 7.5' stroke='%233D5A4C' stroke-width='1' fill='none' stroke-linecap='round'/></g></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Public+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -161,18 +162,32 @@ h4 { font-size: 15px; line-height: 1.3; font-variation-settings: "opsz" 24, "SOF
   top: 0;
   z-index: 50;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  padding: 18px var(--pad) 14px;
+  padding: 14px var(--pad) 12px;
   background: linear-gradient(to bottom, var(--bg) 70%, rgba(244, 241, 234, 0));
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+.appbar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.appbar-logo {
+  width: 28px;
+  height: 28px;
+  color: var(--ink);
+  flex-shrink: 0;
 }
 
 .appbar h1 {
   font-size: 22px;
   font-variation-settings: "opsz" 36, "SOFT" 50, "WONK" 1;
   font-style: italic;
+  margin: 0;
 }
 
 .appbar .meta {
@@ -243,6 +258,13 @@ nav.tabs button .icon {
   font-weight: 300;
 }
 
+nav.tabs button .tab-tars-svg {
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+  margin-bottom: 1px;
+}
+
 nav.tabs button.active {
   color: var(--accent);
 }
@@ -284,6 +306,7 @@ nav.tabs button.active::after {
     text-transform: none;
   }
   nav.tabs button .icon { font-size: 16px; }
+  nav.tabs button .tab-tars-svg { width: 16px; height: 16px; }
   nav.tabs button.active::after {
     top: auto;
     bottom: -1px;
@@ -851,18 +874,15 @@ button.icon-btn:hover { color: var(--ink); background: var(--surface-elev); }
 }
 
 .tars-glyph {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--ink);
   color: var(--bg);
-  border-radius: 4px;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.05em;
+  border-radius: 6px;
+  flex-shrink: 0;
 }
 
 .tars-title {
@@ -1045,6 +1065,222 @@ input[type="range"]::-moz-range-thumb {
   font-style: italic;
   font-family: var(--serif);
   font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+}
+
+/* ============ AGENDA CONTROLS ============ */
+
+.agenda-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.view-toggle {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  padding: 2px;
+}
+.vt-btn {
+  background: none;
+  border: none;
+  padding: 5px 11px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+  transition: all var(--quick);
+}
+.vt-btn:hover { color: var(--ink); }
+.vt-btn.active {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.agenda-nav { display: flex; gap: 2px; }
+
+/* ============ MONTH GRID ============ */
+
+.month-grid-wrap {
+  background: var(--surface-elev);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--rule);
+  gap: 1px;
+}
+
+.month-day-header {
+  background: var(--surface);
+  padding: 8px 6px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  text-align: center;
+  font-weight: 500;
+}
+
+.month-day {
+  background: var(--surface-elev);
+  padding: 7px 6px 6px;
+  min-height: 64px;
+  cursor: pointer;
+  position: relative;
+  transition: background var(--quick);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+@media (min-width: 600px) {
+  .month-day { min-height: 88px; padding: 9px 8px 7px; }
+}
+
+.month-day:hover {
+  background: var(--accent-faint);
+}
+
+.month-day.other-month {
+  background: var(--bg);
+}
+.month-day.other-month .month-day-num { color: var(--ink-faint); }
+
+.month-day.today {
+  background: var(--accent-faint);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.month-day.past:not(.today) .month-day-num { color: var(--ink-muted); }
+
+.month-day-num {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-variation-settings: "opsz" 18, "SOFT" 30;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 600px) {
+  .month-day-num { font-size: 17px; }
+}
+
+.month-day.today .month-day-num { color: var(--accent); font-weight: 500; }
+
+.month-day-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: auto;
+}
+
+.month-day-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.month-day-exam {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  background: var(--warn);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface-elev);
+}
+
+.month-day-sport {
+  position: absolute;
+  bottom: 5px;
+  right: 6px;
+  width: 4px;
+  height: 4px;
+  background: var(--sport-ink);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.month-day-count {
+  font-size: 9px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  align-self: flex-start;
+}
+
+/* ============ PROPOSAL CARD (TARS planning wijzigingen) ============ */
+
+.proposal-card {
+  margin: 14px 0 6px;
+  background: var(--accent-faint);
+  border: 1px solid var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  animation: msgIn var(--med) var(--ease);
+}
+
+.proposal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.proposal-head .eyebrow {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.proposal-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.proposal-list li {
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-variation-settings: "opsz" 14, "SOFT" 30;
+  border-bottom: 1px dashed var(--accent-soft);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.proposal-list li:last-child { border-bottom: none; }
+
+.proposal-list li .op {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  flex-shrink: 0;
+  min-width: 14px;
+}
+
+.proposal-list li.del .op { color: var(--warn); }
+.proposal-list li.upd .op { color: var(--ink-muted); }
+
+.proposal-actions {
+  display: flex;
+  gap: 8px;
 }
 
 /* ============ PROVIDER TOGGLE ============ */
@@ -1277,10 +1513,54 @@ input[type="range"]::-moz-range-thumb {
 </head>
 <body>
 
+<!-- SVG symbol library — herbruikbaar via <use href="#..."/> -->
+<svg width="0" height="0" style="position:absolute;" aria-hidden="true">
+  <defs>
+    <!-- Full TARS logo: 4 slabs + notepad -->
+    <symbol id="tars-logo" viewBox="0 0 64 64">
+      <g fill="currentColor">
+        <rect x="4"  y="10" width="6" height="46" rx="1"/>
+        <rect x="12" y="10" width="6" height="46" rx="1"/>
+        <rect x="20" y="10" width="6" height="46" rx="1"/>
+        <rect x="28" y="10" width="6" height="46" rx="1"/>
+      </g>
+      <rect x="4" y="22" width="30" height="3" fill="#3D5A4C"/>
+      <circle cx="13" cy="48" r="1" fill="#3D5A4C" opacity="0.7"/>
+      <circle cx="25" cy="48" r="1" fill="#3D5A4C" opacity="0.7"/>
+      <g transform="translate(38, 26) rotate(-4)">
+        <rect x="0" y="0" width="22" height="28" rx="1" fill="#FBFAF6" stroke="currentColor" stroke-width="1.2"/>
+        <circle cx="3" cy="3" r="0.8" fill="currentColor"/>
+        <circle cx="8" cy="3" r="0.8" fill="currentColor"/>
+        <circle cx="13" cy="3" r="0.8" fill="currentColor"/>
+        <circle cx="18" cy="3" r="0.8" fill="currentColor"/>
+        <line x1="3" y1="13" x2="16" y2="13" stroke="#8B857B" stroke-width="0.7"/>
+        <line x1="3" y1="17" x2="18" y2="17" stroke="#8B857B" stroke-width="0.7"/>
+        <line x1="3" y1="21" x2="14" y2="21" stroke="#8B857B" stroke-width="0.7"/>
+        <rect x="3" y="7" width="3" height="3" fill="none" stroke="#3D5A4C" stroke-width="0.8"/>
+        <path d="M3.5 8.5 L4.5 9.5 L6 7.5" stroke="#3D5A4C" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+
+    <!-- Compact TARS glyph: alleen slabs voor kleine plekken -->
+    <symbol id="tars-glyph" viewBox="0 0 24 24">
+      <g fill="currentColor">
+        <rect x="3"  y="3" width="3.5" height="18" rx="0.5"/>
+        <rect x="8"  y="3" width="3.5" height="18" rx="0.5"/>
+        <rect x="13" y="3" width="3.5" height="18" rx="0.5"/>
+        <rect x="18" y="3" width="3.5" height="18" rx="0.5"/>
+      </g>
+      <rect x="3" y="10" width="18.5" height="1.5" fill="#3D5A4C" opacity="0.9"/>
+    </symbol>
+  </defs>
+</svg>
+
 <div id="app">
 
   <header class="appbar">
-    <h1>Kantoor TARS</h1>
+    <div class="appbar-title">
+      <svg class="appbar-logo" aria-hidden="true"><use href="#tars-logo"/></svg>
+      <h1>Kantoor TARS</h1>
+    </div>
     <div class="meta" id="appbarMeta">
       <span class="sync-dot" id="syncDot"></span>
       <span id="appbarDate"></span>
@@ -1297,15 +1577,24 @@ input[type="range"]::-moz-range-thumb {
       </div>
 
       <div class="section-head">
-        <h2>Deze week</h2>
-        <div style="display:flex; gap:6px;">
-          <button class="btn ghost" id="weekPrev" aria-label="Vorige week">←</button>
-          <button class="btn ghost" id="weekToday">vandaag</button>
-          <button class="btn ghost" id="weekNext" aria-label="Volgende week">→</button>
+        <h2 id="agendaHeading">Deze week</h2>
+        <div class="agenda-controls">
+          <div class="view-toggle">
+            <button class="vt-btn active" data-mode="week">week</button>
+            <button class="vt-btn" data-mode="month">maand</button>
+          </div>
+          <div class="agenda-nav">
+            <button class="btn ghost" id="navPrev" aria-label="Vorige">←</button>
+            <button class="btn ghost" id="navToday">nu</button>
+            <button class="btn ghost" id="navNext" aria-label="Volgende">→</button>
+          </div>
         </div>
       </div>
 
       <div class="agenda-stack" id="agendaStack"></div>
+      <div class="month-grid-wrap" id="monthGridWrap" style="display:none;">
+        <div class="month-grid" id="monthGrid"></div>
+      </div>
     </section>
 
     <!-- ============ VAKKEN ============ -->
@@ -1346,7 +1635,9 @@ input[type="range"]::-moz-range-thumb {
       <div class="tars-shell">
         <div class="tars-header">
           <div class="tars-id">
-            <div class="tars-glyph">T</div>
+            <div class="tars-glyph">
+              <svg width="20" height="20" aria-hidden="true"><use href="#tars-glyph"/></svg>
+            </div>
             <div>
               <div class="tars-title">TARS — Kantoor</div>
               <div class="tars-sub"><span class="live-dot"></span><span id="tarsStatus">operator online</span> · <span id="tarsProviderTag">claude</span></div>
@@ -1426,8 +1717,8 @@ input[type="range"]::-moz-range-thumb {
         <div class="field" id="geminiModelField">
           <label>Gemini model</label>
           <select id="geminiModel">
-            <option value="gemini-2.5-pro">gemini-2.5-pro (default — beste kwaliteit)</option>
-            <option value="gemini-2.5-flash">gemini-2.5-flash (sneller, goedkoper)</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash (default — snel en goedkoop)</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro (sterker, duurder)</option>
             <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (goedkoopst)</option>
           </select>
         </div>
@@ -1462,7 +1753,7 @@ input[type="range"]::-moz-range-thumb {
     <button data-view="agenda" class="active" role="tab"><span class="icon">◳</span>agenda</button>
     <button data-view="vakken" role="tab"><span class="icon">≡</span>vakken</button>
     <button data-view="voortgang" role="tab"><span class="icon">◐</span>voortgang</button>
-    <button data-view="tars" role="tab"><span class="icon">T</span>tars</button>
+    <button data-view="tars" role="tab"><svg class="tab-tars-svg" aria-hidden="true"><use href="#tars-glyph"/></svg>tars</button>
     <button data-view="instellingen" role="tab"><span class="icon">✕</span>instel.</button>
   </nav>
 
@@ -1501,12 +1792,15 @@ const DEFAULT_STATE = {
     claudeWorkerUrl: '',
     aiProvider: 'claude',
     claudeModel: 'claude-sonnet-4-6',
-    geminiModel: 'gemini-2.5-pro',
+    geminiModel: 'gemini-2.5-flash',
     tarsParams: { humor: 70, honesty: 90, sarcasm: 55, mantras: 40, pragmatism: 75 }
   },
   tarsChats: [],
   forgeCache: null,
-  weekOffset: 0
+  weekOffset: 0,
+  monthOffset: 0,
+  viewMode: 'week',
+  pendingChanges: null
 };
 
 const SUBJECT_PALETTE = [
@@ -1558,6 +1852,7 @@ function parseISO(s) { const [y,m,d] = s.split('-').map(Number); return new Date
 const DAY_NAMES_FULL = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
 const DAY_NAMES_SHORT = ['zo','ma','di','wo','do','vr','za'];
 const MONTH_NAMES = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+const MONTH_NAMES_FULL = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
 
 // JS day index (0=zo) → Forge schedule key
 function dayKeyForDate(d) {
@@ -1649,7 +1944,103 @@ function updateAppbar() {
 
 function renderAgenda() {
   renderExamStrip();
-  renderWeek();
+  const mode = state.viewMode || 'week';
+  if (mode === 'month') {
+    $('#agendaStack').style.display = 'none';
+    $('#monthGridWrap').style.display = '';
+    $('#agendaHeading').textContent = getMonthHeading();
+    renderMonth();
+  } else {
+    $('#agendaStack').style.display = '';
+    $('#monthGridWrap').style.display = 'none';
+    $('#agendaHeading').textContent = state.weekOffset === 0 ? 'Deze week' : (state.weekOffset === 1 ? 'Volgende week' : (state.weekOffset === -1 ? 'Vorige week' : `${state.weekOffset > 0 ? '+' : ''}${state.weekOffset} weken`));
+    renderWeek();
+  }
+  $$('.vt-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+}
+
+function getMonthHeading() {
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + (state.monthOffset || 0));
+  return `${MONTH_NAMES_FULL[base.getMonth()]} ${base.getFullYear()}`;
+}
+
+function renderMonth() {
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + (state.monthOffset || 0));
+  base.setHours(0,0,0,0);
+  const monthStart = startOfWeek(base);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayISOStr = todayISO();
+  const grid = $('#monthGrid');
+
+  let html = '';
+  ['ma','di','wo','do','vr','za','zo'].forEach(d => {
+    html += `<div class="month-day-header">${d}</div>`;
+  });
+
+  // Render until we've covered the entire month + week-completion
+  for (let i = 0; i < 42; i++) {
+    const d = addDays(monthStart, i);
+    const iso = dateISO(d);
+    const isOtherMonth = d.getMonth() !== base.getMonth();
+    const isToday = iso === todayISOStr;
+    const isPast = d < today;
+
+    // Stop after we've finished the month + completed the final week
+    if (i >= 28 && isOtherMonth && d.getDay() === 1) break;
+
+    const dayTasks = state.tasks.filter(t => t.date === iso);
+    const dayExams = state.exams.filter(e => e.date === iso);
+    const colors = [];
+    const seen = new Set();
+    for (const t of dayTasks) {
+      const sub = subjectById(t.subjectId);
+      if (sub && !seen.has(sub.color)) { colors.push(sub.color); seen.add(sub.color); }
+      if (colors.length >= 6) break;
+    }
+
+    // Sport indicator (only for current+future)
+    let hasSport = false;
+    const fc = state.forgeCache && state.forgeCache.data;
+    if (fc) {
+      const sched = fc.schedule ? fc.schedule[dayKeyForDate(d)] : null;
+      const sess = (fc.recentSessions || []).find(s => s.date === iso);
+      hasSport = !!(sess || (sched && sched.type !== 'rest'));
+    }
+
+    const cls = [
+      'month-day',
+      isOtherMonth ? 'other-month' : '',
+      isToday ? 'today' : '',
+      isPast && !isToday ? 'past' : ''
+    ].filter(Boolean).join(' ');
+
+    html += `<div class="${cls}" data-date="${iso}">
+      <span class="month-day-num">${d.getDate()}</span>
+      ${dayExams.length ? '<span class="month-day-exam" title="tentamen"></span>' : ''}
+      ${dayTasks.length ? `<div class="month-day-dots">${colors.map(c => `<span class="month-day-dot" style="background:${c};"></span>`).join('')}${dayTasks.length > colors.length ? `<span class="month-day-count">${dayTasks.length}</span>` : ''}</div>` : ''}
+      ${hasSport ? '<span class="month-day-sport"></span>' : ''}
+    </div>`;
+  }
+  grid.innerHTML = html;
+
+  $$('.month-day', grid).forEach(el => {
+    el.addEventListener('click', () => {
+      const iso = el.dataset.date;
+      const d = parseISO(iso);
+      const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+      const targetWeek = startOfWeek(d);
+      const thisWeek = startOfWeek(todayDate);
+      const weekDiff = Math.round((targetWeek - thisWeek) / (7 * 86400000));
+      state.weekOffset = weekDiff;
+      state.viewMode = 'week';
+      saveState();
+      renderAgenda();
+    });
+  });
 }
 
 function renderExamStrip() {
@@ -1789,10 +2180,33 @@ function toggleTask(id) {
   if ($('#view-voortgang').classList.contains('active')) renderVoortgang();
 }
 
-// Week nav
-$('#weekPrev').addEventListener('click', () => { state.weekOffset--; saveState(); renderAgenda(); });
-$('#weekNext').addEventListener('click', () => { state.weekOffset++; saveState(); renderAgenda(); });
-$('#weekToday').addEventListener('click', () => { state.weekOffset = 0; saveState(); renderAgenda(); });
+// Universal nav — werkt voor week en month
+$('#navPrev').addEventListener('click', () => {
+  if (state.viewMode === 'month') state.monthOffset = (state.monthOffset || 0) - 1;
+  else state.weekOffset--;
+  saveState(); renderAgenda();
+});
+$('#navNext').addEventListener('click', () => {
+  if (state.viewMode === 'month') state.monthOffset = (state.monthOffset || 0) + 1;
+  else state.weekOffset++;
+  saveState(); renderAgenda();
+});
+$('#navToday').addEventListener('click', () => {
+  state.weekOffset = 0;
+  state.monthOffset = 0;
+  saveState(); renderAgenda();
+});
+
+// View toggle (week/month)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.vt-btn');
+  if (!btn) return;
+  const mode = btn.dataset.mode;
+  if (!mode || state.viewMode === mode) return;
+  state.viewMode = mode;
+  saveState();
+  renderAgenda();
+});
 
 // ─────────────── VAKKEN VIEW ───────────────
 
@@ -1986,7 +2400,7 @@ function renderInstellingen() {
   $('#forgeApiKey').value = state.settings.forgeApiKey || '';
   $('#claudeWorkerUrl').value = state.settings.claudeWorkerUrl || state.settings.forgeUrl || '';
   $('#claudeModel').value = state.settings.claudeModel || 'claude-sonnet-4-6';
-  $('#geminiModel').value = state.settings.geminiModel || 'gemini-2.5-pro';
+  $('#geminiModel').value = state.settings.geminiModel || 'gemini-2.5-flash';
   renderProviderToggle();
 
   renderSliders();
@@ -2005,7 +2419,7 @@ function updateProviderTag() {
   const tag = $('#tarsProviderTag');
   if (!tag) return;
   const p = state.settings.aiProvider || 'claude';
-  const model = p === 'claude' ? (state.settings.claudeModel || 'claude-sonnet-4-6') : (state.settings.geminiModel || 'gemini-2.5-pro');
+  const model = p === 'claude' ? (state.settings.claudeModel || 'claude-sonnet-4-6') : (state.settings.geminiModel || 'gemini-2.5-flash');
   // Compact label: drop "claude-" / "gemini-" prefix
   const compact = model.replace(/^claude-/, '').replace(/^gemini-/, '');
   tag.textContent = `${p} · ${compact}`;
@@ -2567,6 +2981,86 @@ Gedrag: Triage. Wat MOET deze week? Rest gaat eruit, ook als 't pijn doet.
 Geen pep talk. Concrete cuts. Bij burnout-signalen: stop, adres basics eerst.
 Voorbeeld: "Drop deze drie. Focus op die twee. Slapen niet onderhandelbaar."`;
 
+const TARS_TOOLS = `PLANNING-TOOLS — wijzigingen voorstellen:
+
+Je hebt toegang tot de planning van de gebruiker. Je kunt wijzigingen
+VOORSTELLEN; de gebruiker moet expliciet bevestigen (knop of een woord als
+"ja", "pas aan", "doe maar", "akkoord") voordat iets daadwerkelijk verandert.
+
+WANNEER WEL voorstellen:
+- Gebruiker vraagt expliciet: "voeg toe", "plan dit in", "wijzig", "schrap"
+- Jullie hebben in een gesprek een planning besproken en de gebruiker is akkoord
+  → vat 'm samen en commit via plan_changes
+- Gebruiker vraagt om een week, project, of tentamen-voorbereiding uit te
+  plannen op basis van wat besproken is
+- Gebruiker vraagt om een tentamen-voorbereiding te plannen (verspreid leesblokken,
+  oefenmomenten, samenvatting maken, etc.)
+
+WANNEER NIET:
+- Bij algemene vragen, advies, brainstorm zonder commit-intent
+- Eerste check-in of statusvraag
+- Als je nog informatie mist (vraag eerst, propose later)
+- Als de gebruiker net "annuleer" / "nee" gezegd heeft
+
+FORMAAT — direct ná je gewone tekst, geen markdown eromheen:
+
+<plan_changes>
+[
+  {"action":"add_task","title":"...","date":"YYYY-MM-DD","subjectId":"sub_xxx"},
+  ...
+]
+</plan_changes>
+
+BESCHIKBARE ACTIES:
+
+add_task:    {action, title, date, subjectId?, projectId?, notes?}
+update_task: {action, id, patch:{title?, date?, subjectId?, projectId?, notes?, done?}}
+delete_task: {action, id}
+
+add_exam:    {action, name, date, subjectId}
+update_exam: {action, id, patch:{name?, date?, subjectId?}}
+delete_exam: {action, id}
+
+add_project:    {action, name, subjectId?, deadline?}
+update_project: {action, id, patch:{name?, subjectId?, deadline?}}
+delete_project: {action, id}
+
+REGELS:
+- ID's (sub_xxx, task_xxx, exam_xxx, proj_xxx) komen UIT de PLANNING-ITEMS
+  sectie in de context. Verzin nooit een ID — als je 'm niet hebt, vraag.
+- Datum exact als YYYY-MM-DD. Geen "morgen" of "volgende week" in JSON.
+- Eén <plan_changes> blok per response. Aan het EIND van je tekst.
+- Voor add_task: alleen 'title' en 'date' verplicht. Geef subjectId mee als
+  je weet bij welk vak het hoort.
+- Voor add_exam: 'name', 'date', en 'subjectId' verplicht.
+- Voor add_project: 'name' verplicht.
+
+KORTE VOORBEELDEN:
+
+User: "Plan 5 leesblokken Wiskunde tot aan de toets van 30 mei."
+TARS: "Bevestigd. 5 leesblokken Wiskunde, verspreid tot 29 mei. Akkoord?
+
+<plan_changes>
+[
+  {"action":"add_task","title":"Wiskunde H1 lezen","date":"2026-05-22","subjectId":"sub_abc"},
+  {"action":"add_task","title":"Wiskunde H2 lezen","date":"2026-05-24","subjectId":"sub_abc"},
+  {"action":"add_task","title":"Wiskunde H3 lezen","date":"2026-05-26","subjectId":"sub_abc"},
+  {"action":"add_task","title":"Wiskunde H4 lezen","date":"2026-05-28","subjectId":"sub_abc"},
+  {"action":"add_task","title":"Wiskunde H5 lezen","date":"2026-05-29","subjectId":"sub_abc"}
+]
+</plan_changes>"
+
+User: "Verschuif de essay-deadline naar volgende vrijdag."
+TARS: "Genoteerd — taak 'Essay schrijven' van 22 mei naar 29 mei.
+
+<plan_changes>
+[{"action":"update_task","id":"task_xyz","patch":{"date":"2026-05-29"}}]
+</plan_changes>"
+
+User: "Hoe ga ik dit aanpakken?" (= advies-vraag, NIET committen)
+TARS: "Eisenhower. Wat is urgent vs belangrijk? Begin daar. [...]"
+(GEEN plan_changes — alleen advies.)`;
+
 function buildPersonalityLayer(p) {
   const level = (v, lvls) => v <= 25 ? lvls[0] : v <= 50 ? lvls[1] : v <= 75 ? lvls[2] : lvls[3];
   return `DYNAMISCHE PARAMETERS — pas je gedrag aan op deze niveaus:
@@ -2647,8 +3141,35 @@ function buildContextLayer() {
         return `- ${e.name}${sub ? ` (${sub.name})` : ''} — over ${d} dag${d === 1 ? '' : 'en'} (${e.date})`;
       }).join('\n');
 
+  // ID-referenties voor TARS' planning-tools — alleen open/upcoming items
+  const subjectRefs = state.subjects.length === 0 ? '  (geen — voeg eerst vakken toe via Instellingen)'
+    : state.subjects.map(s => `  - ${s.id}: ${s.name}`).join('\n');
+
+  const openTasksList = tasks
+    .filter(t => !t.done)
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0, 25);
+  const taskRefs = openTasksList.length === 0 ? '  (geen open taken)'
+    : openTasksList.map(t => {
+        const sub = subjectById(t.subjectId);
+        return `  - ${t.id}: "${t.title}" (${t.date}${sub ? ', ' + sub.name : ''})`;
+      }).join('\n');
+
+  const futureExams = state.exams.filter(e => e.date >= today).sort((a,b) => a.date.localeCompare(b.date));
+  const examRefs = futureExams.length === 0 ? '  (geen)'
+    : futureExams.map(e => {
+        const sub = subjectById(e.subjectId);
+        return `  - ${e.id}: "${e.name}" (${e.date}${sub ? ', ' + sub.name : ''})`;
+      }).join('\n');
+
+  const projectRefs = state.projects.length === 0 ? '  (geen)'
+    : state.projects.map(p => {
+        const sub = subjectById(p.subjectId);
+        return `  - ${p.id}: "${p.name}"${p.deadline ? ' (deadline: ' + p.deadline + ')' : ''}${sub ? ' [' + sub.name + ']' : ''}`;
+      }).join('\n');
+
   return `=== HUIDIGE PLANNING-STATE (live data) ===
-Vandaag: ${today}
+Vandaag: ${today} (${DAY_NAMES_FULL[new Date().getDay()]})
 
 Vandaag's taken: ${todayOpen.length} open van ${todayTasks.length} totaal
 ${todayOpen.slice(0, 5).map(t => `- ${t.title}${t.subjectId ? ` [${subjectById(t.subjectId)?.name || ''}]` : ''}`).join('\n') || '- geen'}
@@ -2663,6 +3184,19 @@ Vorige 7 dagen: ${lastWeekDone}/${lastWeekTotal} taken afgerond${completionPct !
 
 Vakken in beheer: ${state.subjects.map(s => s.name).join(', ') || 'geen'}
 Actieve projecten: ${state.projects.length}${sportCtx}
+
+=== HUIDIGE PLANNING-ITEMS (met IDs — gebruik voor wijzigingen) ===
+Vakken:
+${subjectRefs}
+
+Open taken (eerste 25 op datum):
+${taskRefs}
+
+Aankomende tentamens:
+${examRefs}
+
+Projecten:
+${projectRefs}
 === EINDE STATE ===`;
 }
 
@@ -2671,9 +3205,233 @@ function buildSystemPrompt() {
     TARS_IDENTITY,
     TARS_EXPERTISE,
     TARS_MODES,
+    TARS_TOOLS,
     buildPersonalityLayer(state.settings.tarsParams),
     buildContextLayer()
   ].join('\n\n———\n\n');
+}
+
+// ─────────────── TARS PLAN-CHANGES (schrijftoegang met goedkeuring) ───────────────
+
+function parsePlanChanges(text) {
+  const match = text.match(/<plan_changes>\s*([\s\S]*?)\s*<\/plan_changes>/i);
+  if (!match) return { displayText: text, changes: null };
+  let changes = null;
+  try {
+    // Strip leading code fences if model included them
+    let raw = match[1].trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+    changes = JSON.parse(raw);
+    if (!Array.isArray(changes)) changes = null;
+  } catch (e) {
+    console.warn('Plan_changes JSON parse error:', e);
+  }
+  const displayText = text.replace(/<plan_changes>[\s\S]*?<\/plan_changes>/i, '').trim();
+  return { displayText, changes };
+}
+
+const ACTION_LABELS = {
+  add_task: '+', update_task: '~', delete_task: '–',
+  add_exam: '+', update_exam: '~', delete_exam: '–',
+  add_project: '+', update_project: '~', delete_project: '–'
+};
+
+const ACTION_CLASS = {
+  add_task: 'add', update_task: 'upd', delete_task: 'del',
+  add_exam: 'add', update_exam: 'upd', delete_exam: 'del',
+  add_project: 'add', update_project: 'upd', delete_project: 'del'
+};
+
+function humanizeChange(c) {
+  const dt = (d) => d ? formatDateShort(d) : '';
+  const subjName = (id) => id ? (subjectById(id)?.name || '?vak') : '';
+  const taskById = (id) => state.tasks.find(t => t.id === id);
+  const examById = (id) => state.exams.find(e => e.id === id);
+  const projById = (id) => state.projects.find(p => p.id === id);
+
+  switch (c.action) {
+    case 'add_task':
+      return `Taak: "${c.title}" — ${dt(c.date)}${c.subjectId ? ' [' + subjName(c.subjectId) + ']' : ''}`;
+    case 'update_task': {
+      const t = taskById(c.id);
+      const name = t ? t.title : c.id;
+      const patch = c.patch || {};
+      const parts = [];
+      if (patch.date) parts.push(`datum → ${dt(patch.date)}`);
+      if (patch.title) parts.push(`titel → "${patch.title}"`);
+      if (patch.subjectId !== undefined) parts.push(`vak → ${subjName(patch.subjectId) || 'geen'}`);
+      if (patch.done !== undefined) parts.push(patch.done ? 'afvinken' : 'als open');
+      return `"${name}": ${parts.join(', ') || 'wijziging'}`;
+    }
+    case 'delete_task': {
+      const t = taskById(c.id);
+      return `Taak: "${t ? t.title : c.id}"`;
+    }
+    case 'add_exam':
+      return `Tentamen: "${c.name}" — ${dt(c.date)} [${subjName(c.subjectId)}]`;
+    case 'update_exam': {
+      const e = examById(c.id);
+      const patch = c.patch || {};
+      const parts = [];
+      if (patch.date) parts.push(`datum → ${dt(patch.date)}`);
+      if (patch.name) parts.push(`naam → "${patch.name}"`);
+      if (patch.subjectId !== undefined) parts.push(`vak → ${subjName(patch.subjectId)}`);
+      return `Tentamen "${e ? e.name : c.id}": ${parts.join(', ') || 'wijziging'}`;
+    }
+    case 'delete_exam': {
+      const e = examById(c.id);
+      return `Tentamen: "${e ? e.name : c.id}"`;
+    }
+    case 'add_project':
+      return `Project: "${c.name}"${c.deadline ? ' (deadline ' + dt(c.deadline) + ')' : ''}${c.subjectId ? ' [' + subjName(c.subjectId) + ']' : ''}`;
+    case 'update_project': {
+      const p = projById(c.id);
+      return `Project "${p ? p.name : c.id}": wijziging`;
+    }
+    case 'delete_project': {
+      const p = projById(c.id);
+      return `Project: "${p ? p.name : c.id}"`;
+    }
+    default:
+      return `Onbekende actie: ${c.action}`;
+  }
+}
+
+function renderProposalCard(changes) {
+  const items = changes.map(c => {
+    const label = ACTION_LABELS[c.action] || '?';
+    const cls = ACTION_CLASS[c.action] || '';
+    return `<li class="${cls}"><span class="op">${label}</span>${escapeHtml(humanizeChange(c))}</li>`;
+  }).join('');
+  return `<div class="proposal-card" id="proposalCard">
+    <div class="proposal-head">
+      <span class="eyebrow">Voorgestelde wijziging — ${changes.length} item${changes.length === 1 ? '' : 's'}</span>
+    </div>
+    <ul class="proposal-list">${items}</ul>
+    <div class="proposal-actions">
+      <button class="btn accent" id="proposalApply">pas aan</button>
+      <button class="btn secondary" id="proposalCancel">annuleer</button>
+    </div>
+  </div>`;
+}
+
+function applyPendingChanges() {
+  if (!state.pendingChanges) return;
+  const changes = state.pendingChanges.changes;
+  let applied = 0;
+  const errors = [];
+
+  for (const c of changes) {
+    try {
+      switch (c.action) {
+        case 'add_task': {
+          if (!c.title || !c.date) throw new Error('title en date verplicht');
+          if (c.subjectId && !subjectById(c.subjectId)) throw new Error('subjectId niet gevonden: ' + c.subjectId);
+          state.tasks.push({
+            id: uid('task'),
+            title: String(c.title),
+            date: String(c.date),
+            subjectId: c.subjectId || null,
+            projectId: c.projectId || null,
+            notes: c.notes || '',
+            done: false
+          });
+          applied++;
+          break;
+        }
+        case 'update_task': {
+          const t = state.tasks.find(x => x.id === c.id);
+          if (!t) throw new Error('taak niet gevonden: ' + c.id);
+          if (c.patch && typeof c.patch === 'object') {
+            const allowed = ['title','date','subjectId','projectId','notes','done'];
+            for (const k of allowed) if (k in c.patch) t[k] = c.patch[k];
+          }
+          applied++;
+          break;
+        }
+        case 'delete_task': {
+          const before = state.tasks.length;
+          state.tasks = state.tasks.filter(x => x.id !== c.id);
+          if (state.tasks.length === before) throw new Error('taak niet gevonden: ' + c.id);
+          applied++;
+          break;
+        }
+        case 'add_exam': {
+          if (!c.name || !c.date || !c.subjectId) throw new Error('name, date en subjectId verplicht');
+          if (!subjectById(c.subjectId)) throw new Error('subjectId niet gevonden: ' + c.subjectId);
+          state.exams.push({ id: uid('exam'), name: String(c.name), date: String(c.date), subjectId: c.subjectId });
+          applied++;
+          break;
+        }
+        case 'update_exam': {
+          const e = state.exams.find(x => x.id === c.id);
+          if (!e) throw new Error('tentamen niet gevonden: ' + c.id);
+          if (c.patch && typeof c.patch === 'object') {
+            const allowed = ['name','date','subjectId'];
+            for (const k of allowed) if (k in c.patch) e[k] = c.patch[k];
+          }
+          applied++;
+          break;
+        }
+        case 'delete_exam': {
+          const before = state.exams.length;
+          state.exams = state.exams.filter(x => x.id !== c.id);
+          if (state.exams.length === before) throw new Error('tentamen niet gevonden: ' + c.id);
+          applied++;
+          break;
+        }
+        case 'add_project': {
+          if (!c.name) throw new Error('name verplicht');
+          state.projects.push({
+            id: uid('proj'),
+            name: String(c.name),
+            subjectId: c.subjectId || null,
+            deadline: c.deadline || null
+          });
+          applied++;
+          break;
+        }
+        case 'update_project': {
+          const p = state.projects.find(x => x.id === c.id);
+          if (!p) throw new Error('project niet gevonden: ' + c.id);
+          if (c.patch && typeof c.patch === 'object') {
+            const allowed = ['name','subjectId','deadline'];
+            for (const k of allowed) if (k in c.patch) p[k] = c.patch[k];
+          }
+          applied++;
+          break;
+        }
+        case 'delete_project': {
+          state.tasks.forEach(t => { if (t.projectId === c.id) t.projectId = null; });
+          const before = state.projects.length;
+          state.projects = state.projects.filter(x => x.id !== c.id);
+          if (state.projects.length === before) throw new Error('project niet gevonden: ' + c.id);
+          applied++;
+          break;
+        }
+        default:
+          errors.push('onbekende actie: ' + c.action);
+      }
+    } catch (e) {
+      errors.push(e.message);
+    }
+  }
+
+  state.pendingChanges = null;
+  const summary = applied > 0
+    ? `Bevestigd. ${applied} wijziging${applied === 1 ? '' : 'en'} toegepast.${errors.length ? ' Fouten: ' + errors.slice(0, 2).join('; ') : ''}`
+    : `Geen wijzigingen toegepast. ${errors.length ? 'Fouten: ' + errors.slice(0, 2).join('; ') : ''}`;
+  state.tarsChats.push({ role: 'assistant', content: summary, ts: Date.now() });
+  saveState();
+  renderAll();
+  toast(applied > 0 ? `${applied} wijziging${applied === 1 ? '' : 'en'} doorgevoerd` : 'Niets toegepast');
+}
+
+function cancelPendingChanges() {
+  if (!state.pendingChanges) return;
+  state.pendingChanges = null;
+  state.tarsChats.push({ role: 'system', content: 'voorstel afgewezen', ts: Date.now() });
+  saveState();
+  renderTarsChat();
 }
 
 // ─────────────── TARS CHAT UI ───────────────
@@ -2688,6 +3446,12 @@ function renderTarsChat() {
   } else {
     stream.innerHTML = state.tarsChats.slice(-30).map(m => msgHTML(m)).join('');
   }
+  // Append proposal card als er een hangt
+  if (state.pendingChanges && Array.isArray(state.pendingChanges.changes) && state.pendingChanges.changes.length > 0) {
+    stream.insertAdjacentHTML('beforeend', renderProposalCard(state.pendingChanges.changes));
+    $('#proposalApply')?.addEventListener('click', applyPendingChanges);
+    $('#proposalCancel')?.addEventListener('click', cancelPendingChanges);
+  }
   stream.scrollTop = stream.scrollHeight;
 }
 
@@ -2695,15 +3459,22 @@ function msgHTML(m) {
   if (m.role === 'system') return `<div class="msg system"><div class="bubble">${escapeHtml(m.content)}</div></div>`;
   const cls = m.role === 'user' ? 'user' : 'tars';
   const roleLabel = m.role === 'user' ? 'JIJ' : 'TARS';
+  // Strip plan_changes block uit weergave (blijft wel in m.content voor API context)
+  let display = m.content;
+  if (m.role === 'assistant') {
+    display = display.replace(/<plan_changes>[\s\S]*?<\/plan_changes>/i, '').trim();
+    if (!display) display = '(voorstel hieronder)';
+  }
   return `<div class="msg ${cls}">
     <div class="role">${roleLabel}</div>
-    <div class="bubble">${escapeHtml(m.content)}</div>
+    <div class="bubble">${escapeHtml(display)}</div>
   </div>`;
 }
 
 $('#clearChatBtn').addEventListener('click', () => {
   if (!confirm('Chat wissen?')) return;
   state.tarsChats = [];
+  state.pendingChanges = null;
   saveState();
   renderTarsChat();
 });
@@ -2725,8 +3496,29 @@ $('#tarsSendBtn').addEventListener('click', sendToTars);
 async function sendToTars() {
   const text = tarsInput.value.trim();
   if (!text) return;
+
+  // Tekst-bevestiging van pending proposal — geen API call nodig
+  if (state.pendingChanges) {
+    const confirmRe = /^(ja+|jaa+|ok|oké|oke|akkoord|pas\s*(maar)?\s*aan|doe\s*maar|prima|goed|graag|👍|✓|yes|yep|sure)\s*[.!]?\s*$/i;
+    const rejectRe = /^(nee+|nope|annuleer|laat\s*maar|toch\s*niet|cancel|stop|👎)\s*[.!]?\s*$/i;
+    if (confirmRe.test(text)) {
+      tarsInput.value = ''; tarsInput.style.height = 'auto';
+      state.tarsChats.push({ role: 'user', content: text, ts: Date.now() });
+      saveState(); renderTarsChat();
+      applyPendingChanges();
+      return;
+    }
+    if (rejectRe.test(text)) {
+      tarsInput.value = ''; tarsInput.style.height = 'auto';
+      state.tarsChats.push({ role: 'user', content: text, ts: Date.now() });
+      saveState();
+      cancelPendingChanges();
+      return;
+    }
+  }
+
   if (!state.settings.claudeWorkerUrl) {
-    showSystemMsg('Stel eerst je Worker URL in onder Instellingen → TARS — Claude API.');
+    showSystemMsg('Stel eerst je Worker URL in onder Instellingen → TARS — AI provider.');
     return;
   }
 
@@ -2740,17 +3532,29 @@ async function sendToTars() {
   // Typing indicator
   const stream = $('#tarsStream');
   const typingId = 'typing_' + Date.now();
-  stream.insertAdjacentHTML('beforeend', `<div class="msg tars" id="${typingId}">
+  // Insert before pending-card if present, otherwise at end
+  const pendingCard = $('#proposalCard');
+  const typingHTML = `<div class="msg tars" id="${typingId}">
     <div class="role">TARS</div>
     <div class="bubble"><div class="tars-typing"><span></span><span></span><span></span></div></div>
-  </div>`);
+  </div>`;
+  if (pendingCard) pendingCard.insertAdjacentHTML('beforebegin', typingHTML);
+  else stream.insertAdjacentHTML('beforeend', typingHTML);
   stream.scrollTop = stream.scrollHeight;
   $('#tarsStatus').textContent = 'verwerkt request...';
 
   try {
     const reply = await callAI(text);
     document.getElementById(typingId)?.remove();
+    // Parse plan_changes block uit response
+    const { changes } = parsePlanChanges(reply);
+    // Sla volledige reply op (incl. plan_changes) zodat TARS bij refinements
+    // ('verschuif die taak') zijn eigen vorige voorstel kan zien. msgHTML
+    // strip de XML-block bij weergave.
     state.tarsChats.push({ role: 'assistant', content: reply, ts: Date.now() });
+    if (changes && changes.length > 0) {
+      state.pendingChanges = { changes, proposedAt: Date.now() };
+    }
     saveState();
     renderTarsChat();
     $('#tarsStatus').textContent = 'operator online';
@@ -2797,7 +3601,7 @@ async function callAI(userMessage) {
   const isGemini = provider === 'gemini';
   const endpoint = isGemini ? `${workerUrl}/gemini/messages` : `${workerUrl}/claude/v1/messages`;
   const model = isGemini
-    ? (state.settings.geminiModel || 'gemini-2.5-pro')
+    ? (state.settings.geminiModel || 'gemini-2.5-flash')
     : (state.settings.claudeModel || 'claude-sonnet-4-6');
 
   const body = {
