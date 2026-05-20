@@ -630,7 +630,56 @@ button.icon-btn:hover { color: var(--ink); background: var(--surface-elev); }
   padding: 6px 0;
 }
 
-/* Sport overlay — distinctly secondary, paper-like, semi-transparent */
+/* Day-context — commitments + sport, beide secundair/italic onderaan */
+.day-context {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.context-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--sport-bg);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--sport-ink);
+  font-family: var(--serif);
+  font-style: italic;
+  font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+
+.context-line .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sport-ink);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.context-line .time {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
+
+.context-line.sport.done {
+  color: var(--ok);
+  opacity: 0.85;
+}
+.context-line.sport.done .dot { background: var(--ok); }
+.context-line.sport.done .done-mark::before { content: "✓ "; opacity: 0.7; }
+
+/* Legacy sport-overlay — kept for backwards compat, redirects to context-line look */
 .sport-overlay {
   display: flex;
   align-items: center;
@@ -1077,6 +1126,80 @@ input[type="range"]::-moz-range-thumb {
   font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
 }
 
+/* Commitment rows in Instellingen */
+.commitment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.commitment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.commitment-info strong {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.commitment-info .qual {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.commitment-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.cmt-day-chip {
+  min-width: 36px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.history-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hist-btn {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all var(--quick);
+  letter-spacing: 0.01em;
+}
+.hist-btn:hover { border-color: var(--ink-soft); }
+.hist-btn.active {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
 /* ============ AGENDA CONTROLS ============ */
 
 .agenda-controls {
@@ -1224,6 +1347,20 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 50%;
   opacity: 0.6;
 }
+
+.month-day.has-commit::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  height: 2px;
+  background: var(--sport-ink);
+  opacity: 0.22;
+  border-radius: 1px;
+}
+
+.month-day.today.has-commit::after { display: none; }
 
 .month-day-count {
   font-size: 9px;
@@ -1678,6 +1815,13 @@ input[type="range"]::-moz-range-thumb {
       </div>
 
       <div class="card elev mt-2">
+        <h4 class="mb-2">Vaste bezigheden</h4>
+        <p class="qual mb-2">Werk, sportclub, muziekles — terugkerende blokken die tijd vullen. TARS gebruikt dit om realistische plannen te maken; verschijnt subtiel onderaan dagblokken.</p>
+        <div id="commitmentsList"></div>
+        <button class="btn secondary mt-1" id="addCommitmentBtn">+ vaste bezigheid</button>
+      </div>
+
+      <div class="card elev mt-2">
         <h4 class="mb-2">Forge sport-koppeling</h4>
         <p class="qual mb-2">Toon je sportplanning als doorzichtige overlay op de agenda. Vereist je Forge Worker-URL en API-key.</p>
         <div class="field">
@@ -1735,6 +1879,21 @@ input[type="range"]::-moz-range-thumb {
 
         <button class="btn accent" id="testClaudeBtn">test actieve provider</button>
         <p class="qual mt-1" id="claudeStatus">niet getest.</p>
+
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--rule-soft);">
+          <label style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            <span>Chat-geheugen (berichten meegestuurd naar API)</span>
+            <span class="kbd" id="histLimitVal">6</span>
+          </label>
+          <div class="history-options">
+            <button type="button" class="hist-btn" data-val="2">2 — minimaal</button>
+            <button type="button" class="hist-btn" data-val="4">4 — krap</button>
+            <button type="button" class="hist-btn" data-val="6">6 — default</button>
+            <button type="button" class="hist-btn" data-val="10">10 — uitgebreid</button>
+            <button type="button" class="hist-btn" data-val="20">20 — volledig</button>
+          </div>
+          <p class="qual mt-1">Lager = goedkoper per call, maar TARS herinnert minder van eerdere uitwisselingen. 6 = 3 vorige uitwisselingen, genoeg voor de meeste refinements.</p>
+        </div>
       </div>
 
       <div class="card elev mt-2">
@@ -1796,6 +1955,7 @@ const DEFAULT_STATE = {
   exams: [],
   projects: [],
   tasks: [],
+  commitments: [],
   settings: {
     forgeUrl: '',
     forgeApiKey: '',
@@ -1803,6 +1963,7 @@ const DEFAULT_STATE = {
     aiProvider: 'claude',
     claudeModel: 'claude-sonnet-4-6',
     geminiModel: 'gemini-2.5-flash',
+    chatHistoryLimit: 6,
     tarsParams: { humor: 70, honesty: 90, sarcasm: 55, mantras: 40, pragmatism: 75 }
   },
   tarsChats: [],
@@ -1892,6 +2053,25 @@ function daysBetween(aISO, bISO) {
 
 function subjectById(id) { return state.subjects.find(s => s.id === id); }
 function subjectColor(id) { const s = subjectById(id); return s ? s.color : 'var(--ink-faint)'; }
+
+function commitmentsForDate(d) {
+  if (!Array.isArray(state.commitments)) return [];
+  const dayKey = DAY_NAMES_SHORT[d.getDay()];
+  const iso = dateISO(d);
+  return state.commitments.filter(c => {
+    const days = Array.isArray(c.days) ? c.days : [];
+    if (!days.includes(dayKey)) return false;
+    if (c.startDate && iso < c.startDate) return false;
+    if (c.endDate && iso > c.endDate) return false;
+    return true;
+  });
+}
+
+function formatTimeRange(start, end) {
+  if (!start && !end) return '';
+  if (start && end) return `${start}–${end}`;
+  return start || end;
+}
 
 function escapeHtml(s) {
   if (s == null) return '';
@@ -2022,11 +2202,15 @@ function renderMonth() {
       hasSport = !!(sess || (sched && sched.type !== 'rest'));
     }
 
+    // Commitment hint (subtle bottom line, no dot)
+    const hasCommit = commitmentsForDate(d).length > 0;
+
     const cls = [
       'month-day',
       isOtherMonth ? 'other-month' : '',
       isToday ? 'today' : '',
-      isPast && !isToday ? 'past' : ''
+      isPast && !isToday ? 'past' : '',
+      hasCommit ? 'has-commit' : ''
     ].filter(Boolean).join(' ');
 
     html += `<div class="${cls}" data-date="${iso}">
@@ -2122,7 +2306,18 @@ function dayCardHTML(d, iso, isToday, isPast) {
     return 0;
   });
 
-  // Sport overlay
+  // Commitments voor deze dag
+  const commits = commitmentsForDate(d);
+  const commitLines = commits.map(c => {
+    const timeStr = formatTimeRange(c.startTime, c.endTime);
+    return `<div class="context-line commit">
+      <span class="dot"></span>
+      <span>${escapeHtml(c.name)}</span>
+      ${timeStr ? `<span class="time">${escapeHtml(timeStr)}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // Sport-overlay regel
   let sportLine = '';
   const fc = state.forgeCache && state.forgeCache.data;
   if (fc) {
@@ -2135,15 +2330,22 @@ function dayCardHTML(d, iso, isToday, isPast) {
         : (sched.cardioType || 'cardio');
       const doneCls = doneSess ? 'done' : '';
       const doneMark = doneSess ? '<span class="done-mark"></span>' : '';
-      sportLine = `<div class="sport-overlay ${doneCls}"><span class="sport-dot"></span>${doneMark}sport · ${escapeHtml(label)}${doneSess ? ' · gedaan' : ''}</div>`;
+      sportLine = `<div class="context-line sport ${doneCls}">
+        <span class="dot"></span>${doneMark}<span>sport · ${escapeHtml(label)}${doneSess ? ' · gedaan' : ''}</span>
+      </div>`;
     } else if (doneSess) {
-      // Unplanned session done
-      sportLine = `<div class="sport-overlay done"><span class="sport-dot"></span><span class="done-mark"></span>sport · ${escapeHtml(doneSess.muscleGroup || doneSess.cardioType || doneSess.type)}</div>`;
+      sportLine = `<div class="context-line sport done">
+        <span class="dot"></span><span class="done-mark"></span><span>sport · ${escapeHtml(doneSess.muscleGroup || doneSess.cardioType || doneSess.type)}</span>
+      </div>`;
     }
   }
 
+  const contextHTML = (commitLines || sportLine)
+    ? `<div class="day-context">${commitLines}${sportLine}</div>`
+    : '';
+
   let tasksHTML;
-  if (tasks.length === 0 && !sportLine) {
+  if (tasks.length === 0 && !contextHTML) {
     tasksHTML = `<div class="empty-day">geen taken</div>`;
   } else if (tasks.length === 0) {
     tasksHTML = '';
@@ -2165,7 +2367,7 @@ function dayCardHTML(d, iso, isToday, isPast) {
     }).join('');
   }
 
-  return `<div class="day ${isToday ? 'today' : ''} ${isPast && !isToday ? 'past' : ''} ${tasks.length === 0 && !sportLine ? 'empty' : ''}">
+  return `<div class="day ${isToday ? 'today' : ''} ${isPast && !isToday ? 'past' : ''} ${tasks.length === 0 && !contextHTML ? 'empty' : ''}">
     <div class="day-head">
       <div class="day-date">
         <span class="day-day">${dayName}</span>
@@ -2176,7 +2378,7 @@ function dayCardHTML(d, iso, isToday, isPast) {
     </div>
     <div class="day-body">
       ${tasksHTML}
-      ${sportLine}
+      ${contextHTML}
     </div>
   </div>`;
 }
@@ -2393,6 +2595,131 @@ function renderVoortgang() {
   hist.innerHTML = histHTML;
 }
 
+function renderCommitmentsList() {
+  const list = $('#commitmentsList');
+  if (!list) return;
+  if (!state.commitments || state.commitments.length === 0) {
+    list.innerHTML = '<span class="qual">Nog geen vaste bezigheden. Bv. werk wo/za 16:00–22:00.</span>';
+    return;
+  }
+  list.innerHTML = state.commitments.map(c => {
+    const days = (c.days || []).map(d => d.toUpperCase()).join('·') || '–';
+    const time = formatTimeRange(c.startTime, c.endTime);
+    return `<div class="commitment-row" data-cmt-id="${c.id}">
+      <div class="commitment-info">
+        <strong>${escapeHtml(c.name)}</strong>
+        <span class="qual">${escapeHtml(days)}${time ? ' · ' + escapeHtml(time) : ''}</span>
+      </div>
+      <div class="commitment-actions">
+        <button class="btn ghost" onclick="editCommitment('${c.id}')">bewerk</button>
+        <button class="btn ghost" onclick="deleteCommitment('${c.id}')">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.editCommitment = (id) => {
+  const c = (state.commitments || []).find(x => x.id === id);
+  if (c) openCommitmentModal(c);
+};
+
+window.deleteCommitment = (id) => {
+  const c = (state.commitments || []).find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`Vaste bezigheid "${c.name}" verwijderen?`)) return;
+  state.commitments = state.commitments.filter(x => x.id !== id);
+  saveState();
+  renderInstellingen();
+  renderAgenda();
+  toast('Verwijderd');
+};
+
+window.openCommitmentModal = (prefill = {}) => {
+  const dayLabels = [
+    { k: 'ma', l: 'ma' }, { k: 'di', l: 'di' }, { k: 'wo', l: 'wo' },
+    { k: 'do', l: 'do' }, { k: 'vr', l: 'vr' }, { k: 'za', l: 'za' }, { k: 'zo', l: 'zo' }
+  ];
+  const selectedDays = new Set(prefill.days || []);
+  const dayChipsHTML = dayLabels.map(d =>
+    `<button type="button" class="chip cmt-day-chip ${selectedDays.has(d.k) ? 'active' : ''}" data-day="${d.k}">${d.l}</button>`
+  ).join('');
+
+  openModal(prefill.id ? 'Bezigheid bewerken' : 'Nieuwe vaste bezigheid', `
+    <div class="field">
+      <label>Naam</label>
+      <input type="text" id="m_name" value="${escapeHtml(prefill.name || '')}" placeholder="Bv. Werk, Hockey training, Muziekles" autofocus />
+    </div>
+    <div class="field">
+      <label>Welke dagen?</label>
+      <div class="chips" id="m_days">${dayChipsHTML}</div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Begintijd</label>
+        <input type="time" id="m_start" value="${prefill.startTime || ''}" />
+      </div>
+      <div class="field">
+        <label>Eindtijd</label>
+        <input type="time" id="m_end" value="${prefill.endTime || ''}" />
+      </div>
+    </div>
+    <details style="margin-bottom: 12px;">
+      <summary class="qual" style="cursor: pointer; padding: 4px 0;">Optioneel: alleen geldig binnen periode</summary>
+      <div class="field-row mt-1">
+        <div class="field">
+          <label>Vanaf (optioneel)</label>
+          <input type="date" id="m_start_date" value="${prefill.startDate || ''}" />
+        </div>
+        <div class="field">
+          <label>Tot en met (optioneel)</label>
+          <input type="date" id="m_end_date" value="${prefill.endDate || ''}" />
+        </div>
+      </div>
+    </details>
+    <div class="btn-row">
+      <button class="btn accent" id="m_save">${prefill.id ? 'opslaan' : 'toevoegen'}</button>
+      <button class="btn secondary" onclick="closeModal()">annuleer</button>
+    </div>
+  `);
+
+  // Wire day-chips
+  $$('.cmt-day-chip').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      btn.classList.toggle('active');
+    });
+  });
+
+  $('#m_save').addEventListener('click', () => {
+    const name = $('#m_name').value.trim();
+    if (!name) { $('#m_name').focus(); return; }
+    const days = $$('.cmt-day-chip.active').map(b => b.dataset.day);
+    if (days.length === 0) { toast('Kies ten minste één dag'); return; }
+    const data = {
+      name,
+      days,
+      startTime: $('#m_start').value || null,
+      endTime: $('#m_end').value || null,
+      startDate: $('#m_start_date').value || null,
+      endDate: $('#m_end_date').value || null
+    };
+    if (prefill.id) {
+      const c = state.commitments.find(x => x.id === prefill.id);
+      Object.assign(c, data);
+    } else {
+      if (!Array.isArray(state.commitments)) state.commitments = [];
+      state.commitments.push({ id: uid('cmt'), ...data });
+    }
+    saveState();
+    closeModal();
+    renderInstellingen();
+    renderAgenda();
+    toast(prefill.id ? 'Bijgewerkt' : 'Toegevoegd');
+  });
+};
+
+$('#addCommitmentBtn')?.addEventListener('click', () => openCommitmentModal());
+
 // ─────────────── INSTELLINGEN ───────────────
 
 function renderInstellingen() {
@@ -2410,12 +2737,20 @@ function renderInstellingen() {
     ).join('');
   }
 
+  // Commitments list
+  renderCommitmentsList();
+
   $('#forgeUrl').value = state.settings.forgeUrl || '';
   $('#forgeApiKey').value = state.settings.forgeApiKey || '';
   $('#claudeWorkerUrl').value = state.settings.claudeWorkerUrl || state.settings.forgeUrl || '';
   $('#claudeModel').value = state.settings.claudeModel || 'claude-sonnet-4-6';
   $('#geminiModel').value = state.settings.geminiModel || 'gemini-2.5-flash';
   renderProviderToggle();
+
+  // History limit buttons
+  const limit = state.settings.chatHistoryLimit || 6;
+  $('#histLimitVal').textContent = limit;
+  $$('.hist-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === limit));
 
   renderSliders();
 }
@@ -2552,6 +2887,19 @@ document.addEventListener('click', (e) => {
   renderProviderToggle();
   $('#claudeStatus').textContent = 'niet getest.';
   toast(`Switched naar ${p === 'claude' ? 'Claude' : 'Gemini'}`);
+});
+
+// Chat-history limit buttons
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.hist-btn');
+  if (!btn) return;
+  const val = parseInt(btn.dataset.val);
+  if (!val || state.settings.chatHistoryLimit === val) return;
+  state.settings.chatHistoryLimit = val;
+  saveState();
+  $('#histLimitVal').textContent = val;
+  $$('.hist-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === val));
+  toast(`Geheugen: laatste ${val} berichten`);
 });
 
 $('#resetParamsBtn').addEventListener('click', () => {
@@ -3040,40 +3388,56 @@ add_project: {action, name, subjectId? | subjectName?, deadline?}
 update_project: {action, id, patch:{name?, subjectId?, subjectName?, deadline?}}
 delete_project: {action, id}
 
+add_commitment: {action, name, days:["ma","di",...], startTime?:"HH:MM", endTime?:"HH:MM", startDate?, endDate?}
+  Voor terugkerende vaste blokken (werk, sportclub, lessen).
+  days: array van 'ma','di','wo','do','vr','za','zo'.
+  startDate/endDate: ISO date strings, optioneel — voor begrensde periode.
+update_commitment: {action, id, patch:{name?, days?, startTime?, endTime?, startDate?, endDate?}}
+delete_commitment: {action, id}
+
 CRUCIALE REGELS:
 - subjectId: voor BESTAANDE vakken uit de PLANNING-ITEMS sectie hieronder.
 - subjectName: voor NIEUWE vakken (niet in lijst), OF voor bestaande op naam.
   Als het vak nog niet bestaat wordt 'ie automatisch aangemaakt.
 - ID's (sub_xxx, task_xxx, etc): NOOIT verzinnen. Alleen overnemen uit PLANNING-ITEMS.
-- Datum exact YYYY-MM-DD. Geen "morgen" of "volgende week" in JSON.
+- Datum exact YYYY-MM-DD. Tijd exact HH:MM (24-uurs). Geen "morgen" of "16u" in JSON.
 - Eén <plan_changes> blok per response, AAN HET EIND van je tekst.
 - Vakken die je in dezelfde batch met add_subject toevoegt: verwijs er in
   diezelfde batch naar via subjectName, niet via ID.
+
+PLANNEN MET VASTE BEZIGHEDEN:
+- De sectie VASTE BEZIGHEDEN in context toont wanneer de gebruiker bezet is.
+- Bij voorbereiding op een tentamen of project: vermijd dagen die volledig vol
+  zitten met werk-blokken. Spreid taken over vrije(re) dagen.
+- Bv. user werkt wo + za 16:00–22:00 → wo-avond is geen tijd voor 2u zware
+  studie; plan zwaar werk liever op ma/di/do/vr.
+- Pure rust-dagen ook respecteren: niet ELKE vrije dag volplannen.
 
 VOORBEELDEN:
 
 [Nieuw vak + tentamen + voorbereiding in één batch]
 User: "Wiskunde B tentamen op 30 mei. Plan vijf leesblokken."
-TARS: "Bevestigd. Wiskunde B aangemaakt, tentamen + 5 blokken.
+TARS: "Bevestigd. Wiskunde B aangemaakt, tentamen + 5 blokken — werk-dagen
+overgeslagen.
 
 <plan_changes>
 [
   {"action":"add_subject","name":"Wiskunde B"},
   {"action":"add_exam","name":"Tentamen","date":"2026-05-30","subjectName":"Wiskunde B"},
   {"action":"add_task","title":"Wiskunde H1 lezen","date":"2026-05-22","subjectName":"Wiskunde B"},
-  {"action":"add_task","title":"Wiskunde H2 lezen","date":"2026-05-24","subjectName":"Wiskunde B"},
+  {"action":"add_task","title":"Wiskunde H2 lezen","date":"2026-05-25","subjectName":"Wiskunde B"},
   {"action":"add_task","title":"Wiskunde H3 lezen","date":"2026-05-26","subjectName":"Wiskunde B"},
   {"action":"add_task","title":"Wiskunde H4 lezen","date":"2026-05-28","subjectName":"Wiskunde B"},
   {"action":"add_task","title":"Wiskunde H5 lezen","date":"2026-05-29","subjectName":"Wiskunde B"}
 ]
 </plan_changes>"
 
-[Wijziging bestaande taak — gebruik ID uit context]
-User: "Verschuif essay-deadline naar volgende vrijdag."
-TARS: "Genoteerd — essay van 22 mei naar 29 mei.
+[Vaste bezigheid toevoegen]
+User: "Ik werk op woensdag en zaterdag van 16:00 tot 22:00."
+TARS: "Genoteerd. Voortaan houd ik rekening met die blokken.
 
 <plan_changes>
-[{"action":"update_task","id":"task_xyz","patch":{"date":"2026-05-29"}}]
+[{"action":"add_commitment","name":"Werk","days":["wo","za"],"startTime":"16:00","endTime":"22:00"}]
 </plan_changes>"
 
 [Project + taken]
@@ -3202,6 +3566,15 @@ function buildContextLayer() {
         return `  - ${p.id}: "${p.name}"${p.deadline ? ' (deadline: ' + p.deadline + ')' : ''}${sub ? ' [' + sub.name + ']' : ''}`;
       }).join('\n');
 
+  // Vaste bezigheden (commitments) — TARS gebruikt dit om realistisch te plannen
+  const commitmentRefs = (!state.commitments || state.commitments.length === 0) ? '  (geen)'
+    : state.commitments.map(c => {
+        const days = (c.days || []).join('+');
+        const time = formatTimeRange(c.startTime, c.endTime);
+        const range = (c.startDate || c.endDate) ? ` [periode: ${c.startDate || '...'} → ${c.endDate || '...'}]` : '';
+        return `  - ${c.id}: "${c.name}" — ${days}${time ? ' van ' + time : ''}${range}`;
+      }).join('\n');
+
   return `=== HUIDIGE PLANNING-STATE (live data) ===
 Vandaag: ${today} (${DAY_NAMES_FULL[new Date().getDay()]})
 
@@ -3231,6 +3604,9 @@ ${examRefs}
 
 Projecten:
 ${projectRefs}
+
+Vaste bezigheden (terugkerende blokken — plan hieromheen):
+${commitmentRefs}
 === EINDE STATE ===`;
 }
 
@@ -3285,14 +3661,16 @@ const ACTION_LABELS = {
   add_subject: '+',
   add_task: '+', update_task: '~', delete_task: '–',
   add_exam: '+', update_exam: '~', delete_exam: '–',
-  add_project: '+', update_project: '~', delete_project: '–'
+  add_project: '+', update_project: '~', delete_project: '–',
+  add_commitment: '+', update_commitment: '~', delete_commitment: '–'
 };
 
 const ACTION_CLASS = {
   add_subject: 'add',
   add_task: 'add', update_task: 'upd', delete_task: 'del',
   add_exam: 'add', update_exam: 'upd', delete_exam: 'del',
-  add_project: 'add', update_project: 'upd', delete_project: 'del'
+  add_project: 'add', update_project: 'upd', delete_project: 'del',
+  add_commitment: 'add', update_commitment: 'upd', delete_commitment: 'del'
 };
 
 function humanizeChange(c) {
@@ -3355,6 +3733,19 @@ function humanizeChange(c) {
     case 'delete_project': {
       const p = projById(c.id);
       return `Project: "${p ? p.name : c.id}"`;
+    }
+    case 'add_commitment': {
+      const days = (c.days || []).join('+') || '?';
+      const time = formatTimeRange(c.startTime, c.endTime);
+      return `Vaste bezigheid: "${c.name}" — ${days}${time ? ' · ' + time : ''}`;
+    }
+    case 'update_commitment': {
+      const cm = (state.commitments || []).find(x => x.id === c.id);
+      return `Bezigheid "${cm ? cm.name : c.id}": wijziging`;
+    }
+    case 'delete_commitment': {
+      const cm = (state.commitments || []).find(x => x.id === c.id);
+      return `Bezigheid: "${cm ? cm.name : c.id}"`;
     }
     default:
       return `Onbekende actie: ${c.action}`;
@@ -3527,6 +3918,40 @@ function applyPendingChanges() {
           applied++;
           break;
         }
+        case 'add_commitment': {
+          if (!c.name) throw new Error('name verplicht');
+          const days = Array.isArray(c.days) ? c.days.filter(d => DAY_NAMES_SHORT.includes(d)) : [];
+          if (days.length === 0) throw new Error('days array verplicht (ma/di/wo/...)');
+          if (!Array.isArray(state.commitments)) state.commitments = [];
+          state.commitments.push({
+            id: uid('cmt'),
+            name: String(c.name),
+            days,
+            startTime: c.startTime || null,
+            endTime: c.endTime || null,
+            startDate: c.startDate || null,
+            endDate: c.endDate || null
+          });
+          applied++;
+          break;
+        }
+        case 'update_commitment': {
+          const cm = (state.commitments || []).find(x => x.id === c.id);
+          if (!cm) throw new Error('bezigheid niet gevonden: ' + c.id);
+          const patch = c.patch || {};
+          const allowed = ['name','days','startTime','endTime','startDate','endDate'];
+          for (const k of allowed) if (k in patch) cm[k] = patch[k];
+          applied++;
+          break;
+        }
+        case 'delete_commitment': {
+          if (!Array.isArray(state.commitments)) state.commitments = [];
+          const before = state.commitments.length;
+          state.commitments = state.commitments.filter(x => x.id !== c.id);
+          if (state.commitments.length === before) throw new Error('bezigheid niet gevonden: ' + c.id);
+          applied++;
+          break;
+        }
         default:
           errors.push('onbekende actie: ' + c.action);
       }
@@ -3696,9 +4121,10 @@ async function callAI(userMessage) {
 
   // state.tarsChats includes the just-pushed user message. Build a clean
   // alternating user/assistant sequence ending in user.
+  const historyLimit = Math.max(2, state.settings.chatHistoryLimit || 6);
   const clean = state.tarsChats
     .filter(m => m.role === 'user' || m.role === 'assistant')
-    .slice(-20);
+    .slice(-historyLimit);
   // Collapse consecutive same-role to the most recent (handles cases where
   // a previous API call failed and we now have user→user).
   const messages = [];
