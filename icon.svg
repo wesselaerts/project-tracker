@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Paper-cream background (matcht app bg #F4F1EA) -->
+  <rect width="512" height="512" fill="#F4F1EA"/>
+
+  <!-- Hairline border -->
+  <rect x="0.5" y="0.5" width="511" height="511" fill="none" stroke="#DDD7CA" stroke-width="1"/>
+
+  <!-- TARS body — 4 hinged slabs, on the left of the icon -->
+  <g fill="#1F1D1A">
+    <rect x="62"  y="92"  width="44" height="328" rx="4"/>
+    <rect x="116" y="92"  width="44" height="328" rx="4"/>
+    <rect x="170" y="92"  width="44" height="328" rx="4"/>
+    <rect x="224" y="92"  width="44" height="328" rx="4"/>
+  </g>
+
+  <!-- Display strip across slabs (TARS' "face" panel) -->
+  <rect x="62" y="178" width="206" height="21" fill="#3D5A4C"/>
+
+  <!-- Status indicator dots -->
+  <circle cx="138" cy="358" r="7" fill="#3D5A4C" opacity="0.7"/>
+  <circle cx="200" cy="358" r="7" fill="#3D5A4C" opacity="0.7"/>
+
+  <!-- Notepad, held forward with slight angle -->
+  <g transform="translate(286, 168) rotate(-5)">
+    <!-- Paper -->
+    <rect x="0" y="0" width="170" height="220" rx="6" fill="#FBFAF6" stroke="#1F1D1A" stroke-width="7"/>
+
+    <!-- Spiral binding (top) -->
+    <rect x="0" y="0" width="170" height="22" fill="#1F1D1A" rx="6"/>
+    <circle cx="25" cy="11" r="4.5" fill="#F4F1EA"/>
+    <circle cx="60" cy="11" r="4.5" fill="#F4F1EA"/>
+    <circle cx="95" cy="11" r="4.5" fill="#F4F1EA"/>
+    <circle cx="130" cy="11" r="4.5" fill="#F4F1EA"/>
+
+    <!-- Checked off task -->
+    <rect x="22" y="46" width="20" height="20" fill="none" stroke="#3D5A4C" stroke-width="5"/>
+    <path d="M26 56 L32 62 L42 50" stroke="#3D5A4C" stroke-width="7" fill="none"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="52" y1="56" x2="135" y2="56" stroke="#8B857B" stroke-width="4"/>
+
+    <!-- Empty task lines -->
+    <rect x="22" y="86" width="20" height="20" fill="none" stroke="#8B857B" stroke-width="4"/>
+    <line x1="52" y1="96" x2="120" y2="96" stroke="#8B857B" stroke-width="4"/>
+
+    <rect x="22" y="126" width="20" height="20" fill="none" stroke="#8B857B" stroke-width="4"/>
+    <line x1="52" y1="136" x2="140" y2="136" stroke="#8B857B" stroke-width="4"/>
+
+    <rect x="22" y="166" width="20" height="20" fill="none" stroke="#8B857B" stroke-width="4"/>
+    <line x1="52" y1="176" x2="100" y2="176" stroke="#8B857B" stroke-width="4"/>
+  </g>
+</svg>
