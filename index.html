@@ -1926,6 +1926,7 @@ function showView(name) {
   if (name === 'instellingen') renderInstellingen();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+window.showView = showView;
 
 $$('nav.tabs button').forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.view));
@@ -2225,8 +2226,11 @@ function renderVakken() {
   if (state.subjects.length === 0) {
     list.innerHTML = `<div class="empty-state">
       <h3>Nog geen vakken</h3>
-      <p>Voeg eerst je vakken toe — daarna kun je tentamens en projecten koppelen.</p>
-      <button class="btn accent mt-2" onclick="document.getElementById('addSubjectBtn').click()">Eerste vak toevoegen</button>
+      <p>Voeg vakken toe via Instellingen, of vraag TARS gewoon iets als "<em>plan mijn Wiskunde tentamen op 30 mei</em>" — hij maakt vak + tentamen + voorbereiding aan in één voorstel.</p>
+      <div class="btn-row" style="justify-content: center; margin-top: 18px;">
+        <button class="btn accent" onclick="showView('instellingen')">Vak toevoegen</button>
+        <button class="btn secondary" onclick="showView('tars')">Vraag TARS</button>
+      </div>
     </div>`;
     return;
   }
@@ -2997,78 +3001,98 @@ Je hebt toegang tot de planning van de gebruiker. Je kunt wijzigingen
 VOORSTELLEN; de gebruiker moet expliciet bevestigen (knop of een woord als
 "ja", "pas aan", "doe maar", "akkoord") voordat iets daadwerkelijk verandert.
 
+DEFAULT POSITIE: bij twijfel VOORSTELLEN. De gebruiker moet sowieso nog
+goedkeuren — voorstellen kost niks, niet voorstellen frustreert.
+
 WANNEER WEL voorstellen:
-- Gebruiker vraagt expliciet: "voeg toe", "plan dit in", "wijzig", "schrap"
-- Jullie hebben in een gesprek een planning besproken en de gebruiker is akkoord
-  → vat 'm samen en commit via plan_changes
-- Gebruiker vraagt om een week, project, of tentamen-voorbereiding uit te
-  plannen op basis van wat besproken is
-- Gebruiker vraagt om een tentamen-voorbereiding te plannen (verspreid leesblokken,
-  oefenmomenten, samenvatting maken, etc.)
+- Gebruiker vraagt iets te plannen, in te roosteren, te verschuiven, op te delen
+- Tentamen wordt genoemd → propose voorbereidingsplan (leesblokken, oefenen, samenvatting)
+- Deadline wordt genoemd → propose tussenstappen
+- Gebruiker zegt "ja" / "doe maar" / "ok" op een gesprek → committen
+- Gebruiker omschrijft een vak of project dat nog niet bestaat → voeg toe + plan
 
 WANNEER NIET:
-- Bij algemene vragen, advies, brainstorm zonder commit-intent
-- Eerste check-in of statusvraag
-- Als je nog informatie mist (vraag eerst, propose later)
-- Als de gebruiker net "annuleer" / "nee" gezegd heeft
+- Pure advies-vraag ("hoe pak ik dit aan?") zonder commit-intent
+- Gebruiker net "annuleer" / "nee" gezegd
 
-FORMAAT — direct ná je gewone tekst, geen markdown eromheen:
+FORMAAT — direct ná je tekst:
 
 <plan_changes>
 [
-  {"action":"add_task","title":"...","date":"YYYY-MM-DD","subjectId":"sub_xxx"},
-  ...
+  {"action":"add_task","title":"...","date":"YYYY-MM-DD","subjectName":"..."}
 ]
 </plan_changes>
 
 BESCHIKBARE ACTIES:
 
-add_task:    {action, title, date, subjectId?, projectId?, notes?}
-update_task: {action, id, patch:{title?, date?, subjectId?, projectId?, notes?, done?}}
+add_subject: {action, name, color?}
+  Voor NIEUWE vakken. Color optioneel — wordt anders auto-gekozen.
+
+add_task: {action, title, date, subjectId? | subjectName?, projectId?, notes?}
+update_task: {action, id, patch:{title?, date?, subjectId?, subjectName?, projectId?, notes?, done?}}
 delete_task: {action, id}
 
-add_exam:    {action, name, date, subjectId}
-update_exam: {action, id, patch:{name?, date?, subjectId?}}
+add_exam: {action, name, date, subjectId? | subjectName?}
+update_exam: {action, id, patch:{name?, date?, subjectId?, subjectName?}}
 delete_exam: {action, id}
 
-add_project:    {action, name, subjectId?, deadline?}
-update_project: {action, id, patch:{name?, subjectId?, deadline?}}
+add_project: {action, name, subjectId? | subjectName?, deadline?}
+update_project: {action, id, patch:{name?, subjectId?, subjectName?, deadline?}}
 delete_project: {action, id}
 
-REGELS:
-- ID's (sub_xxx, task_xxx, exam_xxx, proj_xxx) komen UIT de PLANNING-ITEMS
-  sectie in de context. Verzin nooit een ID — als je 'm niet hebt, vraag.
-- Datum exact als YYYY-MM-DD. Geen "morgen" of "volgende week" in JSON.
-- Eén <plan_changes> blok per response. Aan het EIND van je tekst.
-- Voor add_task: alleen 'title' en 'date' verplicht. Geef subjectId mee als
-  je weet bij welk vak het hoort.
-- Voor add_exam: 'name', 'date', en 'subjectId' verplicht.
-- Voor add_project: 'name' verplicht.
+CRUCIALE REGELS:
+- subjectId: voor BESTAANDE vakken uit de PLANNING-ITEMS sectie hieronder.
+- subjectName: voor NIEUWE vakken (niet in lijst), OF voor bestaande op naam.
+  Als het vak nog niet bestaat wordt 'ie automatisch aangemaakt.
+- ID's (sub_xxx, task_xxx, etc): NOOIT verzinnen. Alleen overnemen uit PLANNING-ITEMS.
+- Datum exact YYYY-MM-DD. Geen "morgen" of "volgende week" in JSON.
+- Eén <plan_changes> blok per response, AAN HET EIND van je tekst.
+- Vakken die je in dezelfde batch met add_subject toevoegt: verwijs er in
+  diezelfde batch naar via subjectName, niet via ID.
 
-KORTE VOORBEELDEN:
+VOORBEELDEN:
 
-User: "Plan 5 leesblokken Wiskunde tot aan de toets van 30 mei."
-TARS: "Bevestigd. 5 leesblokken Wiskunde, verspreid tot 29 mei. Akkoord?
+[Nieuw vak + tentamen + voorbereiding in één batch]
+User: "Wiskunde B tentamen op 30 mei. Plan vijf leesblokken."
+TARS: "Bevestigd. Wiskunde B aangemaakt, tentamen + 5 blokken.
 
 <plan_changes>
 [
-  {"action":"add_task","title":"Wiskunde H1 lezen","date":"2026-05-22","subjectId":"sub_abc"},
-  {"action":"add_task","title":"Wiskunde H2 lezen","date":"2026-05-24","subjectId":"sub_abc"},
-  {"action":"add_task","title":"Wiskunde H3 lezen","date":"2026-05-26","subjectId":"sub_abc"},
-  {"action":"add_task","title":"Wiskunde H4 lezen","date":"2026-05-28","subjectId":"sub_abc"},
-  {"action":"add_task","title":"Wiskunde H5 lezen","date":"2026-05-29","subjectId":"sub_abc"}
+  {"action":"add_subject","name":"Wiskunde B"},
+  {"action":"add_exam","name":"Tentamen","date":"2026-05-30","subjectName":"Wiskunde B"},
+  {"action":"add_task","title":"Wiskunde H1 lezen","date":"2026-05-22","subjectName":"Wiskunde B"},
+  {"action":"add_task","title":"Wiskunde H2 lezen","date":"2026-05-24","subjectName":"Wiskunde B"},
+  {"action":"add_task","title":"Wiskunde H3 lezen","date":"2026-05-26","subjectName":"Wiskunde B"},
+  {"action":"add_task","title":"Wiskunde H4 lezen","date":"2026-05-28","subjectName":"Wiskunde B"},
+  {"action":"add_task","title":"Wiskunde H5 lezen","date":"2026-05-29","subjectName":"Wiskunde B"}
 ]
 </plan_changes>"
 
-User: "Verschuif de essay-deadline naar volgende vrijdag."
-TARS: "Genoteerd — taak 'Essay schrijven' van 22 mei naar 29 mei.
+[Wijziging bestaande taak — gebruik ID uit context]
+User: "Verschuif essay-deadline naar volgende vrijdag."
+TARS: "Genoteerd — essay van 22 mei naar 29 mei.
 
 <plan_changes>
 [{"action":"update_task","id":"task_xyz","patch":{"date":"2026-05-29"}}]
 </plan_changes>"
 
-User: "Hoe ga ik dit aanpakken?" (= advies-vraag, NIET committen)
-TARS: "Eisenhower. Wat is urgent vs belangrijk? Begin daar. [...]"
+[Project + taken]
+User: "Nieuw PWS-project, deadline 15 juni. Maak een fase-planning."
+TARS: "Bevestigd. Project + 4 fasen tot deadline.
+
+<plan_changes>
+[
+  {"action":"add_project","name":"PWS Onderzoek","deadline":"2026-06-15"},
+  {"action":"add_task","title":"Onderzoeksvraag formuleren","date":"2026-05-25"},
+  {"action":"add_task","title":"Bronnen verzamelen","date":"2026-05-30"},
+  {"action":"add_task","title":"Conceptversie","date":"2026-06-08"},
+  {"action":"add_task","title":"Eindversie reviewen","date":"2026-06-13"}
+]
+</plan_changes>"
+
+[Advies — GEEN tool]
+User: "Hoe pak ik dit aan?"
+TARS: "Eisenhower. Wat is urgent vs belangrijk? Begin daar."
 (GEEN plan_changes — alleen advies.)`;
 
 function buildPersonalityLayer(p) {
@@ -3224,28 +3248,48 @@ function buildSystemPrompt() {
 // ─────────────── TARS PLAN-CHANGES (schrijftoegang met goedkeuring) ───────────────
 
 function parsePlanChanges(text) {
-  const match = text.match(/<plan_changes>\s*([\s\S]*?)\s*<\/plan_changes>/i);
+  // Strip markdown code fences die het hele blok kunnen omsluiten
+  // (Gemini doet dit soms ondanks instructie)
+  let cleaned = text;
+  const outerFence = cleaned.match(/```(?:\w+)?\s*(<plan_changes>[\s\S]*?<\/plan_changes>)\s*```/i);
+  if (outerFence) cleaned = cleaned.replace(outerFence[0], outerFence[1]);
+
+  const match = cleaned.match(/<plan_changes>\s*([\s\S]*?)\s*<\/plan_changes>/i);
   if (!match) return { displayText: text, changes: null };
+
   let changes = null;
   try {
-    // Strip leading code fences if model included them
-    let raw = match[1].trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+    let raw = match[1].trim();
+    // Strip inner markdown code fences (bv. ```json ... ```)
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+    // Strip trailing comma's die JSON.parse niet accepteert
+    raw = raw.replace(/,(\s*[\]}])/g, '$1');
     changes = JSON.parse(raw);
-    if (!Array.isArray(changes)) changes = null;
+    if (!Array.isArray(changes)) {
+      console.warn('plan_changes is geen array:', changes);
+      changes = null;
+    }
   } catch (e) {
-    console.warn('Plan_changes JSON parse error:', e);
+    console.warn('plan_changes JSON parse error:', e.message, '\nRaw:', match[1]);
   }
-  const displayText = text.replace(/<plan_changes>[\s\S]*?<\/plan_changes>/i, '').trim();
+
+  // Verwijder block (incl. eventuele wrapper-fences) uit display tekst
+  const displayText = text
+    .replace(/```(?:\w+)?\s*<plan_changes>[\s\S]*?<\/plan_changes>\s*```/i, '')
+    .replace(/<plan_changes>[\s\S]*?<\/plan_changes>/i, '')
+    .trim();
   return { displayText, changes };
 }
 
 const ACTION_LABELS = {
+  add_subject: '+',
   add_task: '+', update_task: '~', delete_task: '–',
   add_exam: '+', update_exam: '~', delete_exam: '–',
   add_project: '+', update_project: '~', delete_project: '–'
 };
 
 const ACTION_CLASS = {
+  add_subject: 'add',
   add_task: 'add', update_task: 'upd', delete_task: 'del',
   add_exam: 'add', update_exam: 'upd', delete_exam: 'del',
   add_project: 'add', update_project: 'upd', delete_project: 'del'
@@ -3254,13 +3298,18 @@ const ACTION_CLASS = {
 function humanizeChange(c) {
   const dt = (d) => d ? formatDateShort(d) : '';
   const subjName = (id) => id ? (subjectById(id)?.name || '?vak') : '';
+  const subjRef = (c) => c.subjectName || (c.subjectId ? subjName(c.subjectId) : '');
   const taskById = (id) => state.tasks.find(t => t.id === id);
   const examById = (id) => state.exams.find(e => e.id === id);
   const projById = (id) => state.projects.find(p => p.id === id);
 
   switch (c.action) {
-    case 'add_task':
-      return `Taak: "${c.title}" — ${dt(c.date)}${c.subjectId ? ' [' + subjName(c.subjectId) + ']' : ''}`;
+    case 'add_subject':
+      return `Vak: "${c.name}"`;
+    case 'add_task': {
+      const sub = subjRef(c);
+      return `Taak: "${c.title}" — ${dt(c.date)}${sub ? ' [' + sub + ']' : ''}`;
+    }
     case 'update_task': {
       const t = taskById(c.id);
       const name = t ? t.title : c.id;
@@ -3268,7 +3317,8 @@ function humanizeChange(c) {
       const parts = [];
       if (patch.date) parts.push(`datum → ${dt(patch.date)}`);
       if (patch.title) parts.push(`titel → "${patch.title}"`);
-      if (patch.subjectId !== undefined) parts.push(`vak → ${subjName(patch.subjectId) || 'geen'}`);
+      if (patch.subjectName) parts.push(`vak → ${patch.subjectName}`);
+      else if (patch.subjectId !== undefined) parts.push(`vak → ${subjName(patch.subjectId) || 'geen'}`);
       if (patch.done !== undefined) parts.push(patch.done ? 'afvinken' : 'als open');
       return `"${name}": ${parts.join(', ') || 'wijziging'}`;
     }
@@ -3276,23 +3326,28 @@ function humanizeChange(c) {
       const t = taskById(c.id);
       return `Taak: "${t ? t.title : c.id}"`;
     }
-    case 'add_exam':
-      return `Tentamen: "${c.name}" — ${dt(c.date)} [${subjName(c.subjectId)}]`;
+    case 'add_exam': {
+      const sub = subjRef(c);
+      return `Tentamen: "${c.name}" — ${dt(c.date)}${sub ? ' [' + sub + ']' : ''}`;
+    }
     case 'update_exam': {
       const e = examById(c.id);
       const patch = c.patch || {};
       const parts = [];
       if (patch.date) parts.push(`datum → ${dt(patch.date)}`);
       if (patch.name) parts.push(`naam → "${patch.name}"`);
-      if (patch.subjectId !== undefined) parts.push(`vak → ${subjName(patch.subjectId)}`);
+      if (patch.subjectName) parts.push(`vak → ${patch.subjectName}`);
+      else if (patch.subjectId !== undefined) parts.push(`vak → ${subjName(patch.subjectId)}`);
       return `Tentamen "${e ? e.name : c.id}": ${parts.join(', ') || 'wijziging'}`;
     }
     case 'delete_exam': {
       const e = examById(c.id);
       return `Tentamen: "${e ? e.name : c.id}"`;
     }
-    case 'add_project':
-      return `Project: "${c.name}"${c.deadline ? ' (deadline ' + dt(c.deadline) + ')' : ''}${c.subjectId ? ' [' + subjName(c.subjectId) + ']' : ''}`;
+    case 'add_project': {
+      const sub = subjRef(c);
+      return `Project: "${c.name}"${c.deadline ? ' (deadline ' + dt(c.deadline) + ')' : ''}${sub ? ' [' + sub + ']' : ''}`;
+    }
     case 'update_project': {
       const p = projById(c.id);
       return `Project "${p ? p.name : c.id}": wijziging`;
@@ -3330,17 +3385,70 @@ function applyPendingChanges() {
   let applied = 0;
   const errors = [];
 
+  // Helper: resolve subjectId from either explicit ID, or subjectName lookup/creation
+  // Subjects toegevoegd eerder in deze batch zijn al in state.subjects → name lookup vindt ze.
+  const resolveSubject = (c, optional = false) => {
+    if (c.subjectId) {
+      if (!subjectById(c.subjectId)) throw new Error('subjectId niet gevonden: ' + c.subjectId);
+      return c.subjectId;
+    }
+    if (c.subjectName) {
+      const existing = state.subjects.find(s => s.name.toLowerCase() === c.subjectName.toLowerCase());
+      if (existing) return existing.id;
+      // Auto-create
+      const usedColors = state.subjects.map(s => s.color);
+      const color = SUBJECT_PALETTE.find(col => !usedColors.includes(col)) || SUBJECT_PALETTE[state.subjects.length % SUBJECT_PALETTE.length];
+      const id = uid('sub');
+      state.subjects.push({ id, name: c.subjectName, color });
+      return id;
+    }
+    if (optional) return null;
+    throw new Error('subjectId of subjectName verplicht');
+  };
+
+  // Helper voor patch: resolve subjectName in patches
+  const patchSubject = (patch) => {
+    if (!patch || typeof patch !== 'object') return;
+    if (patch.subjectName && !patch.subjectId) {
+      const existing = state.subjects.find(s => s.name.toLowerCase() === patch.subjectName.toLowerCase());
+      if (existing) {
+        patch.subjectId = existing.id;
+      } else {
+        // Auto-create new
+        const usedColors = state.subjects.map(s => s.color);
+        const color = SUBJECT_PALETTE.find(col => !usedColors.includes(col)) || SUBJECT_PALETTE[state.subjects.length % SUBJECT_PALETTE.length];
+        const id = uid('sub');
+        state.subjects.push({ id, name: patch.subjectName, color });
+        patch.subjectId = id;
+      }
+      delete patch.subjectName;
+    }
+  };
+
   for (const c of changes) {
     try {
       switch (c.action) {
+        case 'add_subject': {
+          if (!c.name) throw new Error('name verplicht');
+          // Skip silently als al bestaat (case-insensitive)
+          if (state.subjects.some(s => s.name.toLowerCase() === c.name.toLowerCase())) {
+            applied++;
+            break;
+          }
+          const usedColors = state.subjects.map(s => s.color);
+          const color = c.color || SUBJECT_PALETTE.find(col => !usedColors.includes(col)) || SUBJECT_PALETTE[0];
+          state.subjects.push({ id: uid('sub'), name: String(c.name), color });
+          applied++;
+          break;
+        }
         case 'add_task': {
           if (!c.title || !c.date) throw new Error('title en date verplicht');
-          if (c.subjectId && !subjectById(c.subjectId)) throw new Error('subjectId niet gevonden: ' + c.subjectId);
+          const subjectId = resolveSubject(c, true);
           state.tasks.push({
             id: uid('task'),
             title: String(c.title),
             date: String(c.date),
-            subjectId: c.subjectId || null,
+            subjectId: subjectId,
             projectId: c.projectId || null,
             notes: c.notes || '',
             done: false
@@ -3351,10 +3459,10 @@ function applyPendingChanges() {
         case 'update_task': {
           const t = state.tasks.find(x => x.id === c.id);
           if (!t) throw new Error('taak niet gevonden: ' + c.id);
-          if (c.patch && typeof c.patch === 'object') {
-            const allowed = ['title','date','subjectId','projectId','notes','done'];
-            for (const k of allowed) if (k in c.patch) t[k] = c.patch[k];
-          }
+          const patch = c.patch || {};
+          patchSubject(patch);
+          const allowed = ['title','date','subjectId','projectId','notes','done'];
+          for (const k of allowed) if (k in patch) t[k] = patch[k];
           applied++;
           break;
         }
@@ -3366,19 +3474,19 @@ function applyPendingChanges() {
           break;
         }
         case 'add_exam': {
-          if (!c.name || !c.date || !c.subjectId) throw new Error('name, date en subjectId verplicht');
-          if (!subjectById(c.subjectId)) throw new Error('subjectId niet gevonden: ' + c.subjectId);
-          state.exams.push({ id: uid('exam'), name: String(c.name), date: String(c.date), subjectId: c.subjectId });
+          if (!c.name || !c.date) throw new Error('name en date verplicht');
+          const subjectId = resolveSubject(c);
+          state.exams.push({ id: uid('exam'), name: String(c.name), date: String(c.date), subjectId });
           applied++;
           break;
         }
         case 'update_exam': {
           const e = state.exams.find(x => x.id === c.id);
           if (!e) throw new Error('tentamen niet gevonden: ' + c.id);
-          if (c.patch && typeof c.patch === 'object') {
-            const allowed = ['name','date','subjectId'];
-            for (const k of allowed) if (k in c.patch) e[k] = c.patch[k];
-          }
+          const patch = c.patch || {};
+          patchSubject(patch);
+          const allowed = ['name','date','subjectId'];
+          for (const k of allowed) if (k in patch) e[k] = patch[k];
           applied++;
           break;
         }
@@ -3391,10 +3499,11 @@ function applyPendingChanges() {
         }
         case 'add_project': {
           if (!c.name) throw new Error('name verplicht');
+          const subjectId = resolveSubject(c, true);
           state.projects.push({
             id: uid('proj'),
             name: String(c.name),
-            subjectId: c.subjectId || null,
+            subjectId,
             deadline: c.deadline || null
           });
           applied++;
@@ -3403,10 +3512,10 @@ function applyPendingChanges() {
         case 'update_project': {
           const p = state.projects.find(x => x.id === c.id);
           if (!p) throw new Error('project niet gevonden: ' + c.id);
-          if (c.patch && typeof c.patch === 'object') {
-            const allowed = ['name','subjectId','deadline'];
-            for (const k of allowed) if (k in c.patch) p[k] = c.patch[k];
-          }
+          const patch = c.patch || {};
+          patchSubject(patch);
+          const allowed = ['name','subjectId','deadline'];
+          for (const k of allowed) if (k in patch) p[k] = patch[k];
           applied++;
           break;
         }
