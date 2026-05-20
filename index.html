@@ -1047,6 +1047,54 @@ input[type="range"]::-moz-range-thumb {
   font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
 }
 
+/* ============ PROVIDER TOGGLE ============ */
+
+.provider-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.provider-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--sans);
+  text-align: left;
+  transition: all var(--quick) var(--ease);
+}
+
+.provider-btn:hover { border-color: var(--ink-soft); }
+
+.provider-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+}
+.provider-btn.active .provider-sub { color: var(--accent-soft); }
+
+.provider-name {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  font-variation-settings: "opsz" 24, "SOFT" 50, "WONK" 1;
+  line-height: 1;
+}
+
+.provider-sub {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
 /* ============ MODAL ============ */
 
 .modal-backdrop {
@@ -1301,7 +1349,7 @@ input[type="range"]::-moz-range-thumb {
             <div class="tars-glyph">T</div>
             <div>
               <div class="tars-title">TARS — Kantoor</div>
-              <div class="tars-sub"><span class="live-dot"></span><span id="tarsStatus">operator online</span></div>
+              <div class="tars-sub"><span class="live-dot"></span><span id="tarsStatus">operator online</span> · <span id="tarsProviderTag">claude</span></div>
             </div>
           </div>
           <button class="btn ghost" id="clearChatBtn" title="Chat wissen">↺</button>
@@ -1347,21 +1395,44 @@ input[type="range"]::-moz-range-thumb {
       </div>
 
       <div class="card elev mt-2">
-        <h4 class="mb-2">TARS — Claude API</h4>
-        <p class="qual mb-2">TARS gebruikt je bestaande Cloudflare Worker als proxy naar Claude.</p>
+        <h4 class="mb-2">TARS — AI provider</h4>
+        <p class="qual mb-2">Welk model draait achter de schermen. Zelfde prompt, andere stem. Switch wanneer je wilt — chat-historie blijft behouden.</p>
         <div class="field">
-          <label>Worker URL (zelfde als Forge — Worker proxiet ook <span class="kbd">/claude/*</span>)</label>
+          <label>Worker URL (zelfde proxy voor beide providers)</label>
           <input type="url" id="claudeWorkerUrl" placeholder="https://forge-c2-proxy6.jouwnaam.workers.dev" />
         </div>
-        <div class="field">
-          <label>Model</label>
+
+        <label style="margin-top: 6px;">Provider</label>
+        <div class="provider-toggle" id="providerToggle">
+          <button type="button" class="provider-btn" data-provider="claude">
+            <span class="provider-name">Claude</span>
+            <span class="provider-sub">Anthropic</span>
+          </button>
+          <button type="button" class="provider-btn" data-provider="gemini">
+            <span class="provider-name">Gemini</span>
+            <span class="provider-sub">Google</span>
+          </button>
+        </div>
+
+        <div class="field mt-2" id="claudeModelField">
+          <label>Claude model</label>
           <select id="claudeModel">
             <option value="claude-sonnet-4-6">claude-sonnet-4-6 (default — snel, voldoende sterk)</option>
             <option value="claude-opus-4-7">claude-opus-4-7 (sterker, duurder)</option>
             <option value="claude-haiku-4-5">claude-haiku-4-5 (heel snel, goedkoop)</option>
           </select>
         </div>
-        <button class="btn accent" id="testClaudeBtn">test TARS</button>
+
+        <div class="field" id="geminiModelField">
+          <label>Gemini model</label>
+          <select id="geminiModel">
+            <option value="gemini-2.5-pro">gemini-2.5-pro (default — beste kwaliteit)</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash (sneller, goedkoper)</option>
+            <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (goedkoopst)</option>
+          </select>
+        </div>
+
+        <button class="btn accent" id="testClaudeBtn">test actieve provider</button>
         <p class="qual mt-1" id="claudeStatus">niet getest.</p>
       </div>
 
@@ -1428,7 +1499,9 @@ const DEFAULT_STATE = {
     forgeUrl: '',
     forgeApiKey: '',
     claudeWorkerUrl: '',
+    aiProvider: 'claude',
     claudeModel: 'claude-sonnet-4-6',
+    geminiModel: 'gemini-2.5-pro',
     tarsParams: { humor: 70, honesty: 90, sarcasm: 55, mantras: 40, pragmatism: 75 }
   },
   tarsChats: [],
@@ -1913,8 +1986,29 @@ function renderInstellingen() {
   $('#forgeApiKey').value = state.settings.forgeApiKey || '';
   $('#claudeWorkerUrl').value = state.settings.claudeWorkerUrl || state.settings.forgeUrl || '';
   $('#claudeModel').value = state.settings.claudeModel || 'claude-sonnet-4-6';
+  $('#geminiModel').value = state.settings.geminiModel || 'gemini-2.5-pro';
+  renderProviderToggle();
 
   renderSliders();
+}
+
+function renderProviderToggle() {
+  const provider = state.settings.aiProvider || 'claude';
+  $$('.provider-btn').forEach(b => b.classList.toggle('active', b.dataset.provider === provider));
+  // Show only the relevant model dropdown
+  $('#claudeModelField').style.display = provider === 'claude' ? '' : 'none';
+  $('#geminiModelField').style.display = provider === 'gemini' ? '' : 'none';
+  updateProviderTag();
+}
+
+function updateProviderTag() {
+  const tag = $('#tarsProviderTag');
+  if (!tag) return;
+  const p = state.settings.aiProvider || 'claude';
+  const model = p === 'claude' ? (state.settings.claudeModel || 'claude-sonnet-4-6') : (state.settings.geminiModel || 'gemini-2.5-pro');
+  // Compact label: drop "claude-" / "gemini-" prefix
+  const compact = model.replace(/^claude-/, '').replace(/^gemini-/, '');
+  tag.textContent = `${p} · ${compact}`;
 }
 
 function renderSliders() {
@@ -2016,7 +2110,21 @@ window.renameSubject = (id) => {
 $('#forgeUrl').addEventListener('change', (e) => { state.settings.forgeUrl = e.target.value.trim().replace(/\/$/,''); saveState(); });
 $('#forgeApiKey').addEventListener('change', (e) => { state.settings.forgeApiKey = e.target.value.trim(); saveState(); });
 $('#claudeWorkerUrl').addEventListener('change', (e) => { state.settings.claudeWorkerUrl = e.target.value.trim().replace(/\/$/,''); saveState(); });
-$('#claudeModel').addEventListener('change', (e) => { state.settings.claudeModel = e.target.value; saveState(); });
+$('#claudeModel').addEventListener('change', (e) => { state.settings.claudeModel = e.target.value; saveState(); updateProviderTag(); });
+$('#geminiModel').addEventListener('change', (e) => { state.settings.geminiModel = e.target.value; saveState(); updateProviderTag(); });
+
+// Provider toggle — delegate clicks
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.provider-btn');
+  if (!btn) return;
+  const p = btn.dataset.provider;
+  if (!p || state.settings.aiProvider === p) return;
+  state.settings.aiProvider = p;
+  saveState();
+  renderProviderToggle();
+  $('#claudeStatus').textContent = 'niet getest.';
+  toast(`Switched naar ${p === 'claude' ? 'Claude' : 'Gemini'}`);
+});
 
 $('#resetParamsBtn').addEventListener('click', () => {
   state.settings.tarsParams = { ...DEFAULT_STATE.settings.tarsParams };
@@ -2640,7 +2748,7 @@ async function sendToTars() {
   $('#tarsStatus').textContent = 'verwerkt request...';
 
   try {
-    const reply = await askClaude(text);
+    const reply = await callAI(text);
     document.getElementById(typingId)?.remove();
     state.tarsChats.push({ role: 'assistant', content: reply, ts: Date.now() });
     saveState();
@@ -2659,8 +2767,10 @@ function showSystemMsg(text) {
   renderTarsChat();
 }
 
-async function askClaude(userMessage) {
-  const workerUrl = state.settings.claudeWorkerUrl.replace(/\/$/, '');
+async function callAI(userMessage) {
+  const workerUrl = (state.settings.claudeWorkerUrl || '').replace(/\/$/, '');
+  if (!workerUrl) throw new Error('Geen Worker URL ingesteld');
+
   // state.tarsChats includes the just-pushed user message. Build a clean
   // alternating user/assistant sequence ending in user.
   const clean = state.tarsChats
@@ -2683,23 +2793,40 @@ async function askClaude(userMessage) {
     messages.push({ role: 'user', content: userMessage });
   }
 
+  const provider = state.settings.aiProvider || 'claude';
+  const isGemini = provider === 'gemini';
+  const endpoint = isGemini ? `${workerUrl}/gemini/messages` : `${workerUrl}/claude/v1/messages`;
+  const model = isGemini
+    ? (state.settings.geminiModel || 'gemini-2.5-pro')
+    : (state.settings.claudeModel || 'claude-sonnet-4-6');
+
   const body = {
-    model: state.settings.claudeModel || 'claude-sonnet-4-6',
+    model,
     max_tokens: 1024,
     system: buildSystemPrompt(),
     messages
   };
 
-  const res = await fetch(`${workerUrl}/claude/v1/messages`, {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   if (!res.ok) {
     const txt = await res.text().catch(() => '');
-    throw new Error(`HTTP ${res.status}: ${txt.slice(0, 200)}`);
+    let parsed; try { parsed = JSON.parse(txt); } catch {}
+    // Friendly errors for common cases
+    if (parsed?.error === 'GEMINI_API_KEY_MISSING') {
+      throw new Error('Worker mist GEMINI_API_KEY — voeg toe in Cloudflare Worker Secrets');
+    }
+    if (parsed?.error === 'CLAUDE_API_KEY_MISSING') {
+      throw new Error('Worker mist CLAUDE_API_KEY');
+    }
+    const msg = parsed?.message || parsed?.error || txt.slice(0, 200);
+    throw new Error(`HTTP ${res.status}: ${msg}`);
   }
   const data = await res.json();
+  // Both providers return Anthropic-compatible shape thanks to Worker conversion
   const text = (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
   if (!text) throw new Error('Leeg antwoord van API');
   return text;
@@ -2712,12 +2839,14 @@ $('#testClaudeBtn').addEventListener('click', async () => {
     $('#claudeStatus').textContent = 'Vul eerst de Worker URL in.';
     return;
   }
-  $('#claudeStatus').textContent = 'pingen...';
+  const p = state.settings.aiProvider || 'claude';
+  const label = p === 'claude' ? 'Claude' : 'Gemini';
+  $('#claudeStatus').textContent = `pingen via ${label}...`;
   try {
-    const reply = await askClaude('Test. Antwoord met één woord: "Bevestigd."');
-    $('#claudeStatus').textContent = 'gekoppeld ✓ — TARS antwoord: "' + reply.slice(0, 60) + '"';
+    const reply = await callAI('Test. Antwoord met één woord: "Bevestigd."');
+    $('#claudeStatus').textContent = `${label} ✓ — antwoord: "${reply.slice(0, 60)}"`;
   } catch (e) {
-    $('#claudeStatus').textContent = 'fout: ' + e.message;
+    $('#claudeStatus').textContent = `${label} fout: ` + e.message;
   }
 });
 
@@ -2730,6 +2859,7 @@ function renderAll() {
   renderVoortgang();
   renderInstellingen();
   renderTarsChat();
+  updateProviderTag();
 }
 
 // ─────────────── INIT ───────────────
