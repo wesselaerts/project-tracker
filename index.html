@@ -679,6 +679,75 @@ button.icon-btn:hover { color: var(--ink); background: var(--surface-elev); }
 .context-line.sport.done .dot { background: var(--ok); }
 .context-line.sport.done .done-mark::before { content: "✓ "; opacity: 0.7; }
 
+/* Vrije dag — distinct from sport/commitments (gebruikt sage accent) */
+.context-line.freeday {
+  color: var(--accent);
+  background: var(--accent-faint);
+  font-style: normal;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.context-line.freeday .dot {
+  background: var(--accent);
+  opacity: 0.8;
+}
+
+/* Inline taak-toevoegen invoer (in-place van + knop) */
+.day-add-inline {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 0;
+  margin-top: 4px;
+  border-top: 1px dashed var(--rule-soft);
+}
+.day-add-inline input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 6px 4px;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+}
+.day-add-inline input::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+  font-family: var(--serif);
+  font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+}
+.day-add-inline button {
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.day-add-inline button:hover { color: var(--accent); }
+
+/* Maandweergave: vrije dag tint */
+.month-day.is-freeday {
+  background: var(--accent-faint);
+}
+.month-day.is-freeday.today {
+  background: var(--accent-faint);
+}
+.month-day.is-freeday::before {
+  content: "vrij";
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  font-size: 8px;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
 /* Legacy sport-overlay — kept for backwards compat, redirects to context-line look */
 .sport-overlay {
   display: flex;
@@ -1790,7 +1859,10 @@ input[type="range"]::-moz-range-thumb {
               <div class="tars-sub"><span class="live-dot"></span><span id="tarsStatus">operator online</span> · <span id="tarsProviderTag">claude</span></div>
             </div>
           </div>
-          <button class="btn ghost" id="clearChatBtn" title="Chat wissen">↺</button>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn ghost" id="briefingBtn" title="Vraag TARS om een weekrapport">rapport</button>
+            <button class="btn ghost" id="clearChatBtn" title="Chat wissen">↺</button>
+          </div>
         </div>
         <div class="tars-stream" id="tarsStream"></div>
         <div class="tars-input-row">
@@ -1812,6 +1884,17 @@ input[type="range"]::-moz-range-thumb {
           <input type="text" id="newSubjectName" placeholder="Vaknaam (bv. Wiskunde B)" />
           <button class="btn accent" id="addSubjectInline">toevoegen</button>
         </div>
+      </div>
+
+      <div class="card elev mt-2">
+        <h4 class="mb-2">Vrije dagen</h4>
+        <p class="qual mb-2">Eénmalige dagen waarop TARS niks plant — vakantie, feestdag, gewoon vrij gewenst.</p>
+        <div id="freedaysList"></div>
+        <div class="field-row mt-2">
+          <input type="date" id="newFreedayDate" />
+          <input type="text" id="newFreedayReason" placeholder="reden (optioneel)" />
+        </div>
+        <button class="btn accent mt-1" id="addFreedayBtn">+ vrije dag</button>
       </div>
 
       <div class="card elev mt-2">
@@ -1956,6 +2039,7 @@ const DEFAULT_STATE = {
   projects: [],
   tasks: [],
   commitments: [],
+  freedays: [],
   settings: {
     forgeUrl: '',
     forgeApiKey: '',
@@ -1971,7 +2055,8 @@ const DEFAULT_STATE = {
   weekOffset: 0,
   monthOffset: 0,
   viewMode: 'week',
-  pendingChanges: null
+  pendingChanges: null,
+  lastBriefingDate: null
 };
 
 const SUBJECT_PALETTE = [
@@ -2067,6 +2152,14 @@ function commitmentsForDate(d) {
   });
 }
 
+function commitmentById(id) {
+  return (state.commitments || []).find(c => c.id === id);
+}
+
+function freedayForDate(iso) {
+  return (state.freedays || []).find(f => f.date === iso);
+}
+
 function formatTimeRange(start, end) {
   if (!start && !end) return '';
   if (start && end) return `${start}–${end}`;
@@ -2102,7 +2195,13 @@ function showView(name) {
   if (name === 'agenda') renderAgenda();
   if (name === 'vakken') renderVakken();
   if (name === 'voortgang') renderVoortgang();
-  if (name === 'tars') { renderTarsChat(); setTimeout(() => $('#tarsInput').focus(), 100); }
+  if (name === 'tars') {
+    renderTarsChat();
+    setTimeout(() => $('#tarsInput').focus(), 100);
+    if (shouldAutoTriggerBriefing()) {
+      setTimeout(() => triggerWeeklyBriefing(true), 600);
+    }
+  }
   if (name === 'instellingen') renderInstellingen();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2204,13 +2303,15 @@ function renderMonth() {
 
     // Commitment hint (subtle bottom line, no dot)
     const hasCommit = commitmentsForDate(d).length > 0;
+    const isFree = !!freedayForDate(iso);
 
     const cls = [
       'month-day',
       isOtherMonth ? 'other-month' : '',
       isToday ? 'today' : '',
       isPast && !isToday ? 'past' : '',
-      hasCommit ? 'has-commit' : ''
+      hasCommit ? 'has-commit' : '',
+      isFree ? 'is-freeday' : ''
     ].filter(Boolean).join(' ');
 
     html += `<div class="${cls}" data-date="${iso}">
@@ -2294,7 +2395,60 @@ function renderWeek() {
     el.addEventListener('click', () => editTask(el.closest('.task').dataset.taskId));
   });
   $$('.day-add', stack).forEach(el => {
-    el.addEventListener('click', () => openTaskModal({ date: el.dataset.date }));
+    el.addEventListener('click', () => {
+      const date = el.dataset.date;
+      const day = el.closest('.day');
+      const host = day.querySelector('.day-add-inline-host');
+      if (!host) return;
+      // Als er al een input is, focus terug
+      const existing = host.querySelector('input');
+      if (existing) { existing.focus(); return; }
+      host.innerHTML = `<div class="day-add-inline">
+        <input type="text" placeholder="taak — enter om toe te voegen, esc om af te breken" />
+        <button class="more" title="meer opties">⋯</button>
+      </div>`;
+      const input = host.querySelector('input');
+      const more = host.querySelector('.more');
+      input.focus();
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const title = input.value.trim();
+          if (!title) { host.innerHTML = ''; return; }
+          state.tasks.push({
+            id: uid('task'),
+            title,
+            date,
+            subjectId: null,
+            projectId: null,
+            notes: '',
+            done: false
+          });
+          saveState();
+          renderAgenda();
+          // Houd focus op nieuwe input op zelfde dag, voor snelle reeks
+          setTimeout(() => {
+            const newAdd = stack.querySelector(`.day-add[data-date="${date}"]`);
+            if (newAdd) newAdd.click();
+          }, 50);
+        } else if (e.key === 'Escape') {
+          host.innerHTML = '';
+        }
+      });
+      input.addEventListener('blur', () => {
+        // Als leeg → opruimen
+        setTimeout(() => {
+          if (input.value.trim() === '' && document.activeElement !== more) {
+            host.innerHTML = '';
+          }
+        }, 120);
+      });
+      more.addEventListener('click', () => {
+        const title = input.value.trim();
+        host.innerHTML = '';
+        openTaskModal({ date, title });
+      });
+    });
   });
 }
 
@@ -2305,6 +2459,12 @@ function dayCardHTML(d, iso, isToday, isPast) {
     if (a.done !== b.done) return a.done ? 1 : -1;
     return 0;
   });
+
+  // Vrije dag
+  const freeday = freedayForDate(iso);
+  const freedayLine = freeday
+    ? `<div class="context-line freeday"><span class="dot"></span><span>vrij${freeday.reason ? ' · ' + escapeHtml(freeday.reason) : ''}</span></div>`
+    : '';
 
   // Commitments voor deze dag
   const commits = commitmentsForDate(d);
@@ -2340,8 +2500,8 @@ function dayCardHTML(d, iso, isToday, isPast) {
     }
   }
 
-  const contextHTML = (commitLines || sportLine)
-    ? `<div class="day-context">${commitLines}${sportLine}</div>`
+  const contextHTML = (freedayLine || commitLines || sportLine)
+    ? `<div class="day-context">${freedayLine}${commitLines}${sportLine}</div>`
     : '';
 
   let tasksHTML;
@@ -2378,6 +2538,7 @@ function dayCardHTML(d, iso, isToday, isPast) {
     </div>
     <div class="day-body">
       ${tasksHTML}
+      <div class="day-add-inline-host" data-date="${iso}"></div>
       ${contextHTML}
     </div>
   </div>`;
@@ -2425,78 +2586,136 @@ document.addEventListener('click', (e) => {
 
 function renderVakken() {
   const list = $('#vakkenList');
-  if (state.subjects.length === 0) {
+  const noSubjects = state.subjects.length === 0;
+  const cmts = state.commitments || [];
+  const noCommitments = cmts.length === 0;
+
+  if (noSubjects && noCommitments) {
     list.innerHTML = `<div class="empty-state">
-      <h3>Nog geen vakken</h3>
-      <p>Voeg vakken toe via Instellingen, of vraag TARS gewoon iets als "<em>plan mijn Wiskunde tentamen op 30 mei</em>" — hij maakt vak + tentamen + voorbereiding aan in één voorstel.</p>
+      <h3>Nog niets opgesteld</h3>
+      <p>Voeg vakken of vaste bezigheden toe via Instellingen, of vraag TARS gewoon iets als "<em>plan mijn Wiskunde tentamen op 30 mei</em>" — hij maakt vak + tentamen + voorbereiding aan in één voorstel.</p>
       <div class="btn-row" style="justify-content: center; margin-top: 18px;">
-        <button class="btn accent" onclick="showView('instellingen')">Vak toevoegen</button>
+        <button class="btn accent" onclick="showView('instellingen')">Instellingen openen</button>
         <button class="btn secondary" onclick="showView('tars')">Vraag TARS</button>
       </div>
     </div>`;
     return;
   }
-  list.innerHTML = state.subjects.map(s => {
-    const tasks = state.tasks.filter(t => t.subjectId === s.id);
-    const done = tasks.filter(t => t.done).length;
-    const pct = tasks.length === 0 ? 0 : Math.round(done / tasks.length * 100);
-    const exams = state.exams.filter(e => e.subjectId === s.id && e.date >= todayISO())
-      .sort((a,b) => a.date.localeCompare(b.date));
-    const projects = state.projects.filter(p => p.subjectId === s.id);
-    const openTasks = tasks.filter(t => !t.done);
 
-    return `<div class="card elev subject-card" style="border-left-color: ${s.color};">
-      <div class="subject-head">
-        <h3>${escapeHtml(s.name)}</h3>
-        <button class="btn ghost" onclick="renameSubject('${s.id}')">bewerk</button>
-      </div>
-      <div class="subject-meta">
-        <div><strong>${tasks.length}</strong><span>taken totaal</span></div>
-        <div><strong>${done}</strong><span>afgerond</span></div>
-        <div><strong>${exams.length}</strong><span>tentamens open</span></div>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%; background: ${s.color};"></div></div>
+  let html = '';
 
-      ${exams.length ? `<div class="subject-section">
-        <span class="eyebrow">Tentamens</span>
-        ${exams.map(e => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--rule-soft); font-size:13px;">
-          <span>${escapeHtml(e.name)}</span>
-          <span class="qual" style="font-size: 12px;">${formatDateShort(e.date)} · over ${daysBetween(todayISO(), e.date)} d</span>
-        </div>`).join('')}
-      </div>` : ''}
+  // === Vakken ===
+  if (!noSubjects) {
+    html += state.subjects.map(s => {
+      const tasks = state.tasks.filter(t => t.subjectId === s.id);
+      const done = tasks.filter(t => t.done).length;
+      const pct = tasks.length === 0 ? 0 : Math.round(done / tasks.length * 100);
+      const exams = state.exams.filter(e => e.subjectId === s.id && e.date >= todayISO())
+        .sort((a,b) => a.date.localeCompare(b.date));
+      const projects = state.projects.filter(p => p.subjectId === s.id);
+      const openTasks = tasks.filter(t => !t.done);
 
-      ${projects.length ? `<div class="subject-section">
-        <span class="eyebrow">Projecten</span>
-        ${projects.map(p => {
-          const ptasks = tasks.filter(t => t.projectId === p.id);
-          const pdone = ptasks.filter(t => t.done).length;
-          const ppct = ptasks.length === 0 ? 0 : Math.round(pdone/ptasks.length*100);
-          return `<div style="padding:6px 0; border-bottom:1px solid var(--rule-soft); font-size:13px;">
-            <div style="display:flex; justify-content:space-between;">
-              <span>${escapeHtml(p.name)}</span>
-              <span class="qual" style="font-size:12px;">${pdone}/${ptasks.length}${p.deadline ? ' · ' + formatDateShort(p.deadline) : ''}</span>
-            </div>
-            <div class="progress-bar" style="margin: 6px 0 0; height: 3px;"><div class="progress-fill" style="width: ${ppct}%; background: ${s.color};"></div></div>
-          </div>`;
-        }).join('')}
-      </div>` : ''}
+      return `<div class="card elev subject-card" style="border-left-color: ${s.color};">
+        <div class="subject-head">
+          <h3>${escapeHtml(s.name)}</h3>
+          <button class="btn ghost" onclick="renameSubject('${s.id}')">bewerk</button>
+        </div>
+        <div class="subject-meta">
+          <div><strong>${tasks.length}</strong><span>taken totaal</span></div>
+          <div><strong>${done}</strong><span>afgerond</span></div>
+          <div><strong>${exams.length}</strong><span>tentamens open</span></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%; background: ${s.color};"></div></div>
 
-      <div class="btn-row" style="margin-top: 14px;">
-        <button class="btn secondary" onclick="openTaskModal({subjectId: '${s.id}'})">+ taak</button>
-        <button class="btn secondary" onclick="openExamModal({subjectId: '${s.id}'})">+ tentamen</button>
-        <button class="btn secondary" onclick="openProjectModal({subjectId: '${s.id}'})">+ project</button>
-      </div>
+        ${exams.length ? `<div class="subject-section">
+          <span class="eyebrow">Tentamens</span>
+          ${exams.map(e => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--rule-soft); font-size:13px;">
+            <span>${escapeHtml(e.name)}</span>
+            <span class="qual" style="font-size: 12px;">${formatDateShort(e.date)} · over ${daysBetween(todayISO(), e.date)} d</span>
+          </div>`).join('')}
+        </div>` : ''}
 
-      ${openTasks.length > 0 ? `<div class="subject-section">
-        <span class="eyebrow">Open taken (${openTasks.length})</span>
-        ${openTasks.slice(0, 6).map(t => `<div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px; gap:8px;">
-          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.title)}</span>
-          <span class="qual" style="font-size:11px; flex-shrink:0;">${formatDateShort(t.date)}</span>
-        </div>`).join('')}
-        ${openTasks.length > 6 ? `<div class="qual" style="font-size:12px; padding:4px 0;">+ ${openTasks.length - 6} meer</div>` : ''}
-      </div>` : ''}
-    </div>`;
-  }).join('');
+        ${projects.length ? `<div class="subject-section">
+          <span class="eyebrow">Projecten</span>
+          ${projects.map(p => {
+            const ptasks = tasks.filter(t => t.projectId === p.id);
+            const pdone = ptasks.filter(t => t.done).length;
+            const ppct = ptasks.length === 0 ? 0 : Math.round(pdone/ptasks.length*100);
+            return `<div style="padding:6px 0; border-bottom:1px solid var(--rule-soft); font-size:13px;">
+              <div style="display:flex; justify-content:space-between;">
+                <span>${escapeHtml(p.name)}</span>
+                <span class="qual" style="font-size:12px;">${pdone}/${ptasks.length}${p.deadline ? ' · ' + formatDateShort(p.deadline) : ''}</span>
+              </div>
+              <div class="progress-bar" style="margin: 6px 0 0; height: 3px;"><div class="progress-fill" style="width: ${ppct}%; background: ${s.color};"></div></div>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
+        <div class="btn-row" style="margin-top: 14px;">
+          <button class="btn secondary" onclick="openTaskModal({subjectId: '${s.id}'})">+ taak</button>
+          <button class="btn secondary" onclick="openExamModal({subjectId: '${s.id}'})">+ tentamen</button>
+          <button class="btn secondary" onclick="openProjectModal({subjectId: '${s.id}'})">+ project</button>
+        </div>
+
+        ${openTasks.length > 0 ? `<div class="subject-section">
+          <span class="eyebrow">Open taken (${openTasks.length})</span>
+          ${openTasks.slice(0, 6).map(t => `<div style="display:flex; justify-content:space-between; padding:5px 0; font-size:13px; gap:8px;">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.title)}</span>
+            <span class="qual" style="font-size:11px; flex-shrink:0;">${formatDateShort(t.date)}</span>
+          </div>`).join('')}
+          ${openTasks.length > 6 ? `<div class="qual" style="font-size:12px; padding:4px 0;">+ ${openTasks.length - 6} meer</div>` : ''}
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // === Vaste bezigheden (commitments) met hun projecten ===
+  if (!noCommitments) {
+    html += `<h3 style="font-style: italic; font-variation-settings: 'opsz' 36, 'SOFT' 50, 'WONK' 1; margin: 24px 0 12px;">Vaste bezigheden</h3>`;
+    html += cmts.map(c => {
+      const projects = state.projects.filter(p => p.commitmentId === c.id);
+      const cmtTasks = state.tasks.filter(t => projects.some(p => p.id === t.projectId));
+      const done = cmtTasks.filter(t => t.done).length;
+      const pct = cmtTasks.length ? Math.round(done/cmtTasks.length*100) : 0;
+      const days = (c.days || []).map(d => d.toUpperCase()).join('·') || '–';
+      const time = formatTimeRange(c.startTime, c.endTime);
+
+      return `<div class="card elev subject-card" style="border-left-color: var(--sport-ink);">
+        <div class="subject-head">
+          <h3>${escapeHtml(c.name)}</h3>
+          <span class="qual" style="font-family: var(--mono); font-style: normal; font-size: 11px;">${escapeHtml(days)}${time ? ' · ' + escapeHtml(time) : ''}</span>
+        </div>
+        <div class="subject-meta">
+          <div><strong>${projects.length}</strong><span>projecten</span></div>
+          <div><strong>${cmtTasks.length}</strong><span>taken</span></div>
+          <div><strong>${done}</strong><span>afgerond</span></div>
+        </div>
+        ${cmtTasks.length ? `<div class="progress-bar"><div class="progress-fill" style="width: ${pct}%; background: var(--sport-ink);"></div></div>` : ''}
+
+        ${projects.length ? `<div class="subject-section">
+          <span class="eyebrow">Projecten</span>
+          ${projects.map(p => {
+            const ptasks = state.tasks.filter(t => t.projectId === p.id);
+            const pdone = ptasks.filter(t => t.done).length;
+            const ppct = ptasks.length === 0 ? 0 : Math.round(pdone/ptasks.length*100);
+            return `<div style="padding:6px 0; border-bottom:1px solid var(--rule-soft); font-size:13px;">
+              <div style="display:flex; justify-content:space-between;">
+                <span>${escapeHtml(p.name)}</span>
+                <span class="qual" style="font-size:12px;">${pdone}/${ptasks.length}${p.deadline ? ' · ' + formatDateShort(p.deadline) : ''}</span>
+              </div>
+              <div class="progress-bar" style="margin: 6px 0 0; height: 3px;"><div class="progress-fill" style="width: ${ppct}%; background: var(--sport-ink);"></div></div>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
+        <div class="btn-row" style="margin-top: 14px;">
+          <button class="btn secondary" onclick="openProjectModal({commitmentId: '${c.id}'})">+ project</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  list.innerHTML = html;
 }
 
 function formatDateShort(iso) {
@@ -2618,6 +2837,37 @@ function renderCommitmentsList() {
   }).join('');
 }
 
+function renderFreedaysList() {
+  const list = $('#freedaysList');
+  if (!list) return;
+  const today = todayISO();
+  const upcoming = (state.freedays || [])
+    .filter(f => f.date >= today)
+    .sort((a,b) => a.date.localeCompare(b.date));
+  if (upcoming.length === 0) {
+    list.innerHTML = '<span class="qual">Geen aankomende vrije dagen.</span>';
+    return;
+  }
+  list.innerHTML = upcoming.map(f =>
+    `<div class="commitment-row" data-fd-id="${f.id}">
+      <div class="commitment-info">
+        <strong>${formatDateShort(f.date)} · ${parseISO(f.date).getFullYear()}</strong>
+        <span class="qual">${f.reason ? escapeHtml(f.reason) : 'vrije dag'}</span>
+      </div>
+      <div class="commitment-actions">
+        <button class="btn ghost" onclick="deleteFreeday('${f.id}')">×</button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+window.deleteFreeday = (id) => {
+  state.freedays = (state.freedays || []).filter(f => f.id !== id);
+  saveState();
+  renderInstellingen();
+  renderAgenda();
+};
+
 window.editCommitment = (id) => {
   const c = (state.commitments || []).find(x => x.id === id);
   if (c) openCommitmentModal(c);
@@ -2720,6 +2970,25 @@ window.openCommitmentModal = (prefill = {}) => {
 
 $('#addCommitmentBtn')?.addEventListener('click', () => openCommitmentModal());
 
+$('#addFreedayBtn')?.addEventListener('click', () => {
+  const date = $('#newFreedayDate').value;
+  const reason = $('#newFreedayReason').value.trim();
+  if (!date) { toast('Kies een datum'); return; }
+  // Check duplicate
+  if ((state.freedays || []).some(f => f.date === date)) {
+    toast('Die dag staat al als vrij');
+    return;
+  }
+  if (!Array.isArray(state.freedays)) state.freedays = [];
+  state.freedays.push({ id: uid('fd'), date, reason });
+  saveState();
+  $('#newFreedayDate').value = '';
+  $('#newFreedayReason').value = '';
+  renderFreedaysList();
+  renderAgenda();
+  toast('Vrije dag toegevoegd');
+});
+
 // ─────────────── INSTELLINGEN ───────────────
 
 function renderInstellingen() {
@@ -2739,6 +3008,7 @@ function renderInstellingen() {
 
   // Commitments list
   renderCommitmentsList();
+  renderFreedaysList();
 
   $('#forgeUrl').value = state.settings.forgeUrl || '';
   $('#forgeApiKey').value = state.settings.forgeApiKey || '';
@@ -3092,22 +3362,30 @@ window.openExamModal = (prefill = {}) => {
 
 // Project modal
 window.openProjectModal = (prefill = {}) => {
-  const subjOpts = ['<option value="">— vrij project —</option>'].concat(
+  const subjOpts = ['<option value="">— geen vak —</option>'].concat(
     state.subjects.map(s => `<option value="${s.id}" ${prefill.subjectId === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`)
+  ).join('');
+  const cmtOpts = ['<option value="">— geen vaste bezigheid —</option>'].concat(
+    (state.commitments || []).map(c => `<option value="${c.id}" ${prefill.commitmentId === c.id ? 'selected' : ''}>${escapeHtml(c.name)}</option>`)
   ).join('');
   openModal(prefill.id ? 'Project bewerken' : 'Nieuw project', `
     <div class="field">
       <label>Projectnaam</label>
-      <input type="text" id="m_name" value="${escapeHtml(prefill.name || '')}" placeholder="Bv. PWS Onderzoek" autofocus />
+      <input type="text" id="m_name" value="${escapeHtml(prefill.name || '')}" placeholder="Bv. PWS Onderzoek, Verkooppresentatie Q3" autofocus />
     </div>
+    <div class="field">
+      <label>Deadline (optioneel)</label>
+      <input type="date" id="m_deadline" value="${prefill.deadline || ''}" />
+    </div>
+    <p class="qual mb-1">Koppel aan een vak <em>of</em> een vaste bezigheid (laat beide leeg voor een vrij project):</p>
     <div class="field-row">
-      <div class="field">
-        <label>Deadline (optioneel)</label>
-        <input type="date" id="m_deadline" value="${prefill.deadline || ''}" />
-      </div>
       <div class="field">
         <label>Vak</label>
         <select id="m_subject">${subjOpts}</select>
+      </div>
+      <div class="field">
+        <label>Vaste bezigheid</label>
+        <select id="m_commitment">${cmtOpts}</select>
       </div>
     </div>
     <div class="btn-row">
@@ -3120,12 +3398,13 @@ window.openProjectModal = (prefill = {}) => {
     const name = $('#m_name').value.trim();
     if (!name) return;
     const subjectId = $('#m_subject').value || null;
+    const commitmentId = $('#m_commitment').value || null;
     const deadline = $('#m_deadline').value || null;
     if (prefill.id) {
       const p = state.projects.find(x => x.id === prefill.id);
-      Object.assign(p, { name, subjectId, deadline });
+      Object.assign(p, { name, subjectId, commitmentId, deadline });
     } else {
-      state.projects.push({ id: uid('proj'), name, subjectId, deadline });
+      state.projects.push({ id: uid('proj'), name, subjectId, commitmentId, deadline });
     }
     saveState();
     closeModal();
@@ -3384,41 +3663,43 @@ add_exam: {action, name, date, subjectId? | subjectName?}
 update_exam: {action, id, patch:{name?, date?, subjectId?, subjectName?}}
 delete_exam: {action, id}
 
-add_project: {action, name, subjectId? | subjectName?, deadline?}
-update_project: {action, id, patch:{name?, subjectId?, subjectName?, deadline?}}
+add_project: {action, name, subjectId? | subjectName? | commitmentId? | commitmentName?, deadline?}
+  Project hoort bij EEN vak OF EEN vaste bezigheid (niet beide, niet keuze opdwingen).
+update_project: {action, id, patch:{name?, subjectId?, subjectName?, commitmentId?, commitmentName?, deadline?}}
 delete_project: {action, id}
 
 add_commitment: {action, name, days:["ma","di",...], startTime?:"HH:MM", endTime?:"HH:MM", startDate?, endDate?}
   Voor terugkerende vaste blokken (werk, sportclub, lessen).
   days: array van 'ma','di','wo','do','vr','za','zo'.
-  startDate/endDate: ISO date strings, optioneel — voor begrensde periode.
 update_commitment: {action, id, patch:{name?, days?, startTime?, endTime?, startDate?, endDate?}}
 delete_commitment: {action, id}
 
+add_freeday: {action, date:"YYYY-MM-DD", reason?}
+  Eenmalige vrije dag. Bv. vakantie, feestdag, persoonlijke vrije dag.
+delete_freeday: {action, id}
+
 CRUCIALE REGELS:
-- subjectId: voor BESTAANDE vakken uit de PLANNING-ITEMS sectie hieronder.
-- subjectName: voor NIEUWE vakken (niet in lijst), OF voor bestaande op naam.
-  Als het vak nog niet bestaat wordt 'ie automatisch aangemaakt.
+- subjectId / commitmentId: voor BESTAANDE items uit de PLANNING-ITEMS sectie hieronder.
+- subjectName / commitmentName: voor NIEUWE items (niet in lijst), OF voor bestaande op naam.
+  Als het item nog niet bestaat wordt 'ie automatisch aangemaakt.
 - ID's (sub_xxx, task_xxx, etc): NOOIT verzinnen. Alleen overnemen uit PLANNING-ITEMS.
 - Datum exact YYYY-MM-DD. Tijd exact HH:MM (24-uurs). Geen "morgen" of "16u" in JSON.
 - Eén <plan_changes> blok per response, AAN HET EIND van je tekst.
-- Vakken die je in dezelfde batch met add_subject toevoegt: verwijs er in
-  diezelfde batch naar via subjectName, niet via ID.
+- Items die je in dezelfde batch met add_subject/add_commitment toevoegt: verwijs er
+  in diezelfde batch naar via subjectName/commitmentName, niet via ID.
 
-PLANNEN MET VASTE BEZIGHEDEN:
-- De sectie VASTE BEZIGHEDEN in context toont wanneer de gebruiker bezet is.
-- Bij voorbereiding op een tentamen of project: vermijd dagen die volledig vol
-  zitten met werk-blokken. Spreid taken over vrije(re) dagen.
-- Bv. user werkt wo + za 16:00–22:00 → wo-avond is geen tijd voor 2u zware
-  studie; plan zwaar werk liever op ma/di/do/vr.
-- Pure rust-dagen ook respecteren: niet ELKE vrije dag volplannen.
+PLANNEN MET VASTE BEZIGHEDEN EN VRIJE DAGEN:
+- VASTE BEZIGHEDEN sectie toont wanneer de gebruiker bezet is (terugkerende blokken).
+- VRIJE DAGEN sectie toont één-malige vrije dagen. NOOIT taken op deze dagen plannen.
+- Bij voorbereiding op een tentamen of project: vermijd dagen vol werk-blokken EN vrije dagen.
+- Bv. user werkt wo + za 16:00–22:00 + heeft koningsdag (27 apr) vrij → plan zwaar
+  werk op ma/di/do/vr exclusief 27 apr.
 
 VOORBEELDEN:
 
-[Nieuw vak + tentamen + voorbereiding in één batch]
+[Vak + tentamen + voorbereiding in één batch]
 User: "Wiskunde B tentamen op 30 mei. Plan vijf leesblokken."
-TARS: "Bevestigd. Wiskunde B aangemaakt, tentamen + 5 blokken — werk-dagen
-overgeslagen.
+TARS: "Bevestigd. Wiskunde B + tentamen + 5 blokken op vrije dagen.
 
 <plan_changes>
 [
@@ -3432,26 +3713,26 @@ overgeslagen.
 ]
 </plan_changes>"
 
-[Vaste bezigheid toevoegen]
-User: "Ik werk op woensdag en zaterdag van 16:00 tot 22:00."
-TARS: "Genoteerd. Voortaan houd ik rekening met die blokken.
-
-<plan_changes>
-[{"action":"add_commitment","name":"Werk","days":["wo","za"],"startTime":"16:00","endTime":"22:00"}]
-</plan_changes>"
-
-[Project + taken]
-User: "Nieuw PWS-project, deadline 15 juni. Maak een fase-planning."
-TARS: "Bevestigd. Project + 4 fasen tot deadline.
+[Project onder vaste bezigheid Werk]
+User: "Ik moet voor werk een verkooppresentatie maken, voor 5 juni. Plan tussenstappen."
+TARS: "Bevestigd. Project onder Werk + 4 tussenstappen.
 
 <plan_changes>
 [
-  {"action":"add_project","name":"PWS Onderzoek","deadline":"2026-06-15"},
-  {"action":"add_task","title":"Onderzoeksvraag formuleren","date":"2026-05-25"},
-  {"action":"add_task","title":"Bronnen verzamelen","date":"2026-05-30"},
-  {"action":"add_task","title":"Conceptversie","date":"2026-06-08"},
-  {"action":"add_task","title":"Eindversie reviewen","date":"2026-06-13"}
+  {"action":"add_project","name":"Verkooppresentatie Q3","commitmentName":"Werk","deadline":"2026-06-05"},
+  {"action":"add_task","title":"Doelpubliek en kernboodschap definiëren","date":"2026-05-23"},
+  {"action":"add_task","title":"Slides opzetten en data verzamelen","date":"2026-05-27"},
+  {"action":"add_task","title":"Conceptversie en rehearsal","date":"2026-06-01"},
+  {"action":"add_task","title":"Finale check en print","date":"2026-06-04"}
 ]
+</plan_changes>"
+
+[Vrije dag toevoegen]
+User: "Koningsdag heb ik vrij, 27 april."
+TARS: "Genoteerd. Geen taken op 27 april meer.
+
+<plan_changes>
+[{"action":"add_freeday","date":"2026-04-27","reason":"Koningsdag"}]
 </plan_changes>"
 
 [Advies — GEEN tool]
@@ -3563,7 +3844,9 @@ function buildContextLayer() {
   const projectRefs = state.projects.length === 0 ? '  (geen)'
     : state.projects.map(p => {
         const sub = subjectById(p.subjectId);
-        return `  - ${p.id}: "${p.name}"${p.deadline ? ' (deadline: ' + p.deadline + ')' : ''}${sub ? ' [' + sub.name + ']' : ''}`;
+        const cmt = commitmentById(p.commitmentId);
+        const parent = sub ? '[vak: ' + sub.name + ']' : (cmt ? '[werk: ' + cmt.name + ']' : '');
+        return `  - ${p.id}: "${p.name}"${p.deadline ? ' (deadline: ' + p.deadline + ')' : ''} ${parent}`;
       }).join('\n');
 
   // Vaste bezigheden (commitments) — TARS gebruikt dit om realistisch te plannen
@@ -3574,6 +3857,14 @@ function buildContextLayer() {
         const range = (c.startDate || c.endDate) ? ` [periode: ${c.startDate || '...'} → ${c.endDate || '...'}]` : '';
         return `  - ${c.id}: "${c.name}" — ${days}${time ? ' van ' + time : ''}${range}`;
       }).join('\n');
+
+  // Vrije dagen — TARS plant hier niets
+  const upcomingFreedays = (state.freedays || [])
+    .filter(f => f.date >= today)
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0, 20);
+  const freedayRefs = upcomingFreedays.length === 0 ? '  (geen)'
+    : upcomingFreedays.map(f => `  - ${f.id}: ${f.date}${f.reason ? ' — ' + f.reason : ''}`).join('\n');
 
   return `=== HUIDIGE PLANNING-STATE (live data) ===
 Vandaag: ${today} (${DAY_NAMES_FULL[new Date().getDay()]})
@@ -3607,6 +3898,9 @@ ${projectRefs}
 
 Vaste bezigheden (terugkerende blokken — plan hieromheen):
 ${commitmentRefs}
+
+Vrije dagen (NOOIT taken plannen):
+${freedayRefs}
 === EINDE STATE ===`;
 }
 
@@ -3662,7 +3956,8 @@ const ACTION_LABELS = {
   add_task: '+', update_task: '~', delete_task: '–',
   add_exam: '+', update_exam: '~', delete_exam: '–',
   add_project: '+', update_project: '~', delete_project: '–',
-  add_commitment: '+', update_commitment: '~', delete_commitment: '–'
+  add_commitment: '+', update_commitment: '~', delete_commitment: '–',
+  add_freeday: '+', delete_freeday: '–'
 };
 
 const ACTION_CLASS = {
@@ -3670,7 +3965,8 @@ const ACTION_CLASS = {
   add_task: 'add', update_task: 'upd', delete_task: 'del',
   add_exam: 'add', update_exam: 'upd', delete_exam: 'del',
   add_project: 'add', update_project: 'upd', delete_project: 'del',
-  add_commitment: 'add', update_commitment: 'upd', delete_commitment: 'del'
+  add_commitment: 'add', update_commitment: 'upd', delete_commitment: 'del',
+  add_freeday: 'add', delete_freeday: 'del'
 };
 
 function humanizeChange(c) {
@@ -3724,7 +4020,9 @@ function humanizeChange(c) {
     }
     case 'add_project': {
       const sub = subjRef(c);
-      return `Project: "${c.name}"${c.deadline ? ' (deadline ' + dt(c.deadline) + ')' : ''}${sub ? ' [' + sub + ']' : ''}`;
+      const cmt = c.commitmentName || (c.commitmentId ? (commitmentById(c.commitmentId)?.name || '?bezigheid') : '');
+      const parent = sub ? '[vak: ' + sub + ']' : (cmt ? '[werk: ' + cmt + ']' : '[vrij]');
+      return `Project: "${c.name}"${c.deadline ? ' (deadline ' + dt(c.deadline) + ')' : ''} ${parent}`;
     }
     case 'update_project': {
       const p = projById(c.id);
@@ -3746,6 +4044,13 @@ function humanizeChange(c) {
     case 'delete_commitment': {
       const cm = (state.commitments || []).find(x => x.id === c.id);
       return `Bezigheid: "${cm ? cm.name : c.id}"`;
+    }
+    case 'add_freeday': {
+      return `Vrije dag: ${dt(c.date)}${c.reason ? ' — ' + c.reason : ''}`;
+    }
+    case 'delete_freeday': {
+      const f = (state.freedays || []).find(x => x.id === c.id);
+      return `Vrije dag: ${f ? f.date : c.id}`;
     }
     default:
       return `Onbekende actie: ${c.action}`;
@@ -3797,7 +4102,25 @@ function applyPendingChanges() {
     throw new Error('subjectId of subjectName verplicht');
   };
 
-  // Helper voor patch: resolve subjectName in patches
+  // Helper: resolve commitmentId from ID or name (auto-create if naam onbekend)
+  const resolveCommitment = (c) => {
+    if (c.commitmentId) {
+      if (!commitmentById(c.commitmentId)) throw new Error('commitmentId niet gevonden: ' + c.commitmentId);
+      return c.commitmentId;
+    }
+    if (c.commitmentName) {
+      if (!Array.isArray(state.commitments)) state.commitments = [];
+      const existing = state.commitments.find(cm => cm.name.toLowerCase() === c.commitmentName.toLowerCase());
+      if (existing) return existing.id;
+      // Auto-create minimaal
+      const id = uid('cmt');
+      state.commitments.push({ id, name: c.commitmentName, days: [], startTime: null, endTime: null });
+      return id;
+    }
+    return null;
+  };
+
+  // Helper voor patch: resolve subjectName / commitmentName in patches
   const patchSubject = (patch) => {
     if (!patch || typeof patch !== 'object') return;
     if (patch.subjectName && !patch.subjectId) {
@@ -3805,7 +4128,6 @@ function applyPendingChanges() {
       if (existing) {
         patch.subjectId = existing.id;
       } else {
-        // Auto-create new
         const usedColors = state.subjects.map(s => s.color);
         const color = SUBJECT_PALETTE.find(col => !usedColors.includes(col)) || SUBJECT_PALETTE[state.subjects.length % SUBJECT_PALETTE.length];
         const id = uid('sub');
@@ -3813,6 +4135,18 @@ function applyPendingChanges() {
         patch.subjectId = id;
       }
       delete patch.subjectName;
+    }
+    if (patch.commitmentName && !patch.commitmentId) {
+      const existing = (state.commitments || []).find(cm => cm.name.toLowerCase() === patch.commitmentName.toLowerCase());
+      if (existing) {
+        patch.commitmentId = existing.id;
+      } else {
+        if (!Array.isArray(state.commitments)) state.commitments = [];
+        const id = uid('cmt');
+        state.commitments.push({ id, name: patch.commitmentName, days: [], startTime: null, endTime: null });
+        patch.commitmentId = id;
+      }
+      delete patch.commitmentName;
     }
   };
 
@@ -3891,10 +4225,12 @@ function applyPendingChanges() {
         case 'add_project': {
           if (!c.name) throw new Error('name verplicht');
           const subjectId = resolveSubject(c, true);
+          const commitmentId = resolveCommitment(c);
           state.projects.push({
             id: uid('proj'),
             name: String(c.name),
             subjectId,
+            commitmentId,
             deadline: c.deadline || null
           });
           applied++;
@@ -3905,7 +4241,7 @@ function applyPendingChanges() {
           if (!p) throw new Error('project niet gevonden: ' + c.id);
           const patch = c.patch || {};
           patchSubject(patch);
-          const allowed = ['name','subjectId','deadline'];
+          const allowed = ['name','subjectId','commitmentId','deadline'];
           for (const k of allowed) if (k in patch) p[k] = patch[k];
           applied++;
           break;
@@ -3952,6 +4288,30 @@ function applyPendingChanges() {
           applied++;
           break;
         }
+        case 'add_freeday': {
+          if (!c.date) throw new Error('date verplicht');
+          if (!Array.isArray(state.freedays)) state.freedays = [];
+          // Skip silently als al bestaat
+          if (state.freedays.some(f => f.date === c.date)) {
+            applied++;
+            break;
+          }
+          state.freedays.push({
+            id: uid('fd'),
+            date: String(c.date),
+            reason: c.reason || ''
+          });
+          applied++;
+          break;
+        }
+        case 'delete_freeday': {
+          if (!Array.isArray(state.freedays)) state.freedays = [];
+          const before = state.freedays.length;
+          state.freedays = state.freedays.filter(x => x.id !== c.id);
+          if (state.freedays.length === before) throw new Error('vrije dag niet gevonden: ' + c.id);
+          applied++;
+          break;
+        }
         default:
           errors.push('onbekende actie: ' + c.action);
       }
@@ -3977,6 +4337,87 @@ function cancelPendingChanges() {
   saveState();
   renderTarsChat();
 }
+
+// ─────────────── WEEKLY BRIEFING ───────────────
+
+const BRIEFING_PROMPT = `Maak een weekrapport voor deze week.
+
+Houd het bondig en in jouw normale stem — beats, geen alinea's. Geen wall of
+data, geen complete takenlijst. Synthese.
+
+Structuur:
+
+1. KOP — hoofdthema van de week in één regel.
+2. MUST — top 3 prioriteiten: welke 3 dingen MOETEN deze week af, zelfs als de
+   rest sneuvelt?
+3. RISICO — patroon dat me gaat raken, of taak die ik dreig te missen op basis
+   van mijn planning, achterstand, en vaste bezigheden.
+4. TIP — één tactische zet voor deze week (welke dag laat ik leeg, welk vak
+   pak ik eerst, etc).
+
+BELANGRIJK: geen <plan_changes> blok in dit antwoord. Pure overzicht. Als je
+actie nodig vindt: noem het en wacht op een vraag van mij.`;
+
+function shouldAutoTriggerBriefing() {
+  if (!state.settings.claudeWorkerUrl) return false;
+  const today = new Date();
+  if (today.getDay() !== 1) return false; // Alleen maandag
+  const todayStr = todayISO();
+  if (state.lastBriefingDate === todayStr) return false;
+  // Niet triggeren als app nog leeg is
+  if (state.tasks.length === 0 && state.subjects.length === 0 && state.exams.length === 0 && (state.commitments || []).length === 0) return false;
+  return true;
+}
+
+async function triggerWeeklyBriefing(isAuto = false) {
+  if (!state.settings.claudeWorkerUrl) {
+    showSystemMsg('Stel eerst je Worker URL in onder Instellingen.');
+    return;
+  }
+
+  if (isAuto) {
+    state.tarsChats.push({
+      role: 'system',
+      content: `maandag-rapport · ${formatDateShort(todayISO())} · automatisch`,
+      ts: Date.now()
+    });
+  }
+  state.tarsChats.push({ role: 'user', content: BRIEFING_PROMPT, ts: Date.now() });
+  state.lastBriefingDate = todayISO();
+  saveState();
+  renderTarsChat();
+
+  const stream = $('#tarsStream');
+  const typingId = 'typing_' + Date.now();
+  stream.insertAdjacentHTML('beforeend', `<div class="msg tars" id="${typingId}">
+    <div class="role">TARS</div>
+    <div class="bubble"><div class="tars-typing"><span></span><span></span><span></span></div></div>
+  </div>`);
+  stream.scrollTop = stream.scrollHeight;
+  $('#tarsStatus').textContent = 'weekrapport...';
+
+  try {
+    const reply = await callAI(BRIEFING_PROMPT);
+    document.getElementById(typingId)?.remove();
+    // Filter eventueel een ongewenst plan_changes blok eruit (TARS hoort 't niet te doen)
+    const { displayText, changes } = parsePlanChanges(reply);
+    // Sla alleen displayText op — geen pending changes vanuit briefing
+    state.tarsChats.push({
+      role: 'assistant',
+      content: changes ? displayText : reply,
+      ts: Date.now()
+    });
+    saveState();
+    renderTarsChat();
+    $('#tarsStatus').textContent = 'operator online';
+  } catch (e) {
+    document.getElementById(typingId)?.remove();
+    showSystemMsg(`Briefing mislukt — ${e.message}`);
+    $('#tarsStatus').textContent = 'fout';
+  }
+}
+
+$('#briefingBtn')?.addEventListener('click', () => triggerWeeklyBriefing(false));
 
 // ─────────────── TARS CHAT UI ───────────────
 
