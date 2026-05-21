@@ -720,6 +720,64 @@ button.icon-btn:hover { color: var(--ink); background: var(--surface-elev); }
 .context-line.allico.done .dot { background: var(--ok); }
 .context-line.allico.done .count { color: var(--ok); }
 
+/* Apple Agenda events — italic gray zoals commitments, met eigen kleurpunt */
+.context-line.calendar {
+  font-family: var(--serif);
+  font-style: italic;
+  font-variation-settings: "opsz" 14, "SOFT" 100, "WONK" 1;
+  font-size: 12px;
+  color: var(--sport-ink);
+  letter-spacing: 0.01em;
+}
+.context-line.calendar .dot {
+  opacity: 0.85;
+}
+.context-line.calendar .time {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 11px;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Calendar rows in instellingen */
+.cal-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 32px 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.cal-row input[type="text"], .cal-row input[type="url"] {
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  padding: 4px 2px;
+  font-size: 12px;
+  color: var(--ink);
+  font-family: var(--mono);
+  outline: none;
+}
+.cal-row input:focus { border-bottom-color: var(--accent); }
+.cal-color-pick {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--rule);
+  cursor: pointer;
+}
+.cal-row .del {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 16px;
+  cursor: pointer;
+}
+.cal-row .del:hover { color: var(--warn); }
+
 /* Inline taak-toevoegen invoer (in-place van + knop) */
 .day-add-inline {
   display: flex;
@@ -1949,6 +2007,17 @@ input[type="range"]::-moz-range-thumb {
       </div>
 
       <div class="card elev mt-2">
+        <h4 class="mb-2">Apple Agenda</h4>
+        <p class="qual mb-2">Publieke iCloud-agenda URLs (read-only). TARS ziet je afspraken en vermijdt die tijden bij plannen.</p>
+        <div id="calendarsList"></div>
+        <div class="btn-row mt-1">
+          <button class="btn secondary" id="addCalendarBtn">+ agenda toevoegen</button>
+          <button class="btn accent" id="syncCalendarsBtn">sync nu</button>
+        </div>
+        <p class="qual mt-1" id="calendarStatus">Geen agenda's gekoppeld.</p>
+      </div>
+
+      <div class="card elev mt-2">
         <h4 class="mb-2">Advanced Microcontrollers — leer-oefenen</h4>
         <p class="qual mb-2">Kwiz-sessies tellen dagelijks mee in je planning. Doel: X sessies per dag. TARS ziet je voortgang in de week-analyse. Syncen via de Allico kwiz-app.</p>
         <div class="field">
@@ -2099,6 +2168,8 @@ const DEFAULT_STATE = {
   tarsChats: [],
   forgeCache: null,
   allicoCache: null,
+  calendars: [],
+  calendarsCache: null,
   weekOffset: 0,
   monthOffset: 0,
   viewMode: 'week',
@@ -2242,6 +2313,29 @@ function allicoStreak() {
     }
   }
   return streak;
+}
+
+// === Apple Agenda / iCloud calendars ===
+const CALENDAR_COLORS = ['#7B8794', '#6B7A8F', '#8B6F8E', '#6A8579', '#9B8767'];
+
+function eventsForDate(iso) {
+  const cache = state.calendarsCache;
+  if (!cache || !Array.isArray(cache.events)) return [];
+  return cache.events.filter(e => {
+    const startDate = (e.start || '').slice(0, 10);
+    return startDate === iso;
+  }).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+}
+
+function formatEventTime(ev) {
+  if (ev.allDay) return 'hele dag';
+  if (!ev.start) return '';
+  const start = new Date(ev.start);
+  const end = ev.end ? new Date(ev.end) : null;
+  const startStr = start.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (!end) return startStr;
+  const endStr = end.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${startStr}–${endStr}`;
 }
 
 function formatTimeRange(start, end) {
@@ -2563,6 +2657,18 @@ function dayCardHTML(d, iso, isToday, isPast) {
     </div>`;
   }
 
+  // Apple Agenda events
+  const events = eventsForDate(iso);
+  const calendarLines = events.map(ev => {
+    const cal = (state.calendars || []).find(c => c.id === ev.calendarId);
+    const color = (cal && cal.color) || CALENDAR_COLORS[0];
+    return `<div class="context-line calendar">
+      <span class="dot" style="background:${color}"></span>
+      <span>${escapeHtml(ev.summary || 'Afspraak')}</span>
+      <span class="time">${escapeHtml(formatEventTime(ev))}</span>
+    </div>`;
+  }).join('');
+
   // Commitments voor deze dag
   const commits = commitmentsForDate(d);
   const commitLines = commits.map(c => {
@@ -2597,8 +2703,8 @@ function dayCardHTML(d, iso, isToday, isPast) {
     }
   }
 
-  const contextHTML = (freedayLine || allicoLine || commitLines || sportLine)
-    ? `<div class="day-context">${freedayLine}${allicoLine}${commitLines}${sportLine}</div>`
+  const contextHTML = (freedayLine || allicoLine || calendarLines || commitLines || sportLine)
+    ? `<div class="day-context">${freedayLine}${calendarLines}${allicoLine}${commitLines}${sportLine}</div>`
     : '';
 
   let tasksHTML;
@@ -2965,6 +3071,130 @@ window.deleteFreeday = (id) => {
   renderAgenda();
 };
 
+// === Apple Agenda beheer ===
+function renderCalendarsList() {
+  const list = $('#calendarsList');
+  if (!list) return;
+  if (!state.calendars || state.calendars.length === 0) {
+    list.innerHTML = '<span class="qual">Nog geen agenda\'s gekoppeld.</span>';
+    return;
+  }
+  list.innerHTML = state.calendars.map((c, i) => `
+    <div class="cal-row" data-id="${c.id}">
+      <input type="text" class="cal-name" placeholder="naam" value="${escapeHtml(c.name || '')}" />
+      <input type="url" class="cal-url" placeholder="webcal://..." value="${escapeHtml(c.url || '')}" />
+      <button class="cal-color-pick" style="background:${c.color || CALENDAR_COLORS[0]}" title="kleur wijzigen"></button>
+      <button class="del" title="verwijderen">×</button>
+    </div>
+  `).join('');
+
+  // Bind events
+  $$('.cal-row', list).forEach(row => {
+    const id = row.dataset.id;
+    const nameInp = row.querySelector('.cal-name');
+    const urlInp = row.querySelector('.cal-url');
+    const colorBtn = row.querySelector('.cal-color-pick');
+    const delBtn = row.querySelector('.del');
+
+    nameInp.addEventListener('change', () => {
+      const c = state.calendars.find(x => x.id === id);
+      if (c) { c.name = nameInp.value.trim(); saveState(); }
+    });
+    urlInp.addEventListener('change', () => {
+      const c = state.calendars.find(x => x.id === id);
+      if (c) { c.url = urlInp.value.trim(); saveState(); }
+    });
+    colorBtn.addEventListener('click', () => {
+      const c = state.calendars.find(x => x.id === id);
+      if (!c) return;
+      const idx = CALENDAR_COLORS.indexOf(c.color);
+      c.color = CALENDAR_COLORS[(idx + 1) % CALENDAR_COLORS.length];
+      saveState();
+      colorBtn.style.background = c.color;
+      renderAgenda();
+    });
+    delBtn.addEventListener('click', () => {
+      if (!confirm('Agenda verwijderen?')) return;
+      state.calendars = state.calendars.filter(x => x.id !== id);
+      saveState();
+      renderCalendarsList();
+      fetchAllCalendars();
+    });
+  });
+}
+
+async function fetchAllCalendars(showStatus = false) {
+  const workerUrl = (state.settings.claudeWorkerUrl || state.settings.forgeUrl || '').replace(/\/$/, '');
+  const cals = (state.calendars || []).filter(c => c.url);
+  if (!workerUrl) {
+    if (showStatus) $('#calendarStatus').textContent = 'Stel eerst de Worker URL in.';
+    return;
+  }
+  if (cals.length === 0) {
+    state.calendarsCache = { fetchedAt: Date.now(), events: [] };
+    saveState();
+    if (showStatus) $('#calendarStatus').textContent = 'Geen agenda\'s om te syncen.';
+    return;
+  }
+
+  if (showStatus) $('#calendarStatus').textContent = 'aan het ophalen...';
+  const allEvents = [];
+  let errs = 0;
+
+  for (const cal of cals) {
+    try {
+      const res = await fetch(`${workerUrl}/calendar/fetch?url=${encodeURIComponent(cal.url)}`);
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        console.warn(`Calendar ${cal.name} HTTP ${res.status}: ${txt.slice(0,80)}`);
+        errs++;
+        continue;
+      }
+      const data = await res.json();
+      if (Array.isArray(data.events)) {
+        for (const ev of data.events) {
+          allEvents.push({ ...ev, calendarId: cal.id, calendarName: cal.name, color: cal.color });
+        }
+      }
+    } catch (e) {
+      console.warn(`Calendar fetch failed for ${cal.name}:`, e);
+      errs++;
+    }
+  }
+
+  allEvents.sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+  state.calendarsCache = { fetchedAt: Date.now(), events: allEvents };
+  saveState();
+
+  if (showStatus) {
+    const todayCount = eventsForDate(todayISO()).length;
+    $('#calendarStatus').textContent = errs > 0
+      ? `gekoppeld met ${errs} fout(en) — ${allEvents.length} events, vandaag ${todayCount}`
+      : `gekoppeld ✓ — ${allEvents.length} events totaal, vandaag ${todayCount}`;
+  }
+  return allEvents;
+}
+
+$('#addCalendarBtn')?.addEventListener('click', () => {
+  if (!Array.isArray(state.calendars)) state.calendars = [];
+  const usedColors = state.calendars.map(c => c.color);
+  const color = CALENDAR_COLORS.find(c => !usedColors.includes(c)) || CALENDAR_COLORS[0];
+  state.calendars.push({
+    id: uid('cal'),
+    name: '',
+    url: '',
+    color
+  });
+  saveState();
+  renderCalendarsList();
+});
+
+$('#syncCalendarsBtn')?.addEventListener('click', async () => {
+  await fetchAllCalendars(true);
+  renderAgenda();
+  toast('Agenda\'s opgehaald');
+});
+
 window.editCommitment = (id) => {
   const c = (state.commitments || []).find(x => x.id === id);
   if (c) openCommitmentModal(c);
@@ -3106,6 +3336,7 @@ function renderInstellingen() {
   // Commitments list
   renderCommitmentsList();
   renderFreedaysList();
+  renderCalendarsList();
 
   $('#forgeUrl').value = state.settings.forgeUrl || '';
   $('#forgeApiKey').value = state.settings.forgeApiKey || '';
@@ -3592,6 +3823,14 @@ async function maybeAutoSync() {
       if ($('#view-agenda').classList.contains('active')) renderAgenda();
     }
   }
+  // Calendars — sync every 30 min if there are any
+  if ((state.calendars || []).length > 0) {
+    const cc = state.calendarsCache;
+    if (!cc || (Date.now() - cc.fetchedAt > 30 * 60 * 1000)) {
+      await fetchAllCalendars(false);
+      if ($('#view-agenda').classList.contains('active')) renderAgenda();
+    }
+  }
 }
 
 // ─────────────── ALLICO LEER-OEFENEN ───────────────
@@ -3852,9 +4091,13 @@ CRUCIALE REGELS:
 PLANNEN MET VASTE BEZIGHEDEN EN VRIJE DAGEN:
 - VASTE BEZIGHEDEN sectie toont wanneer de gebruiker bezet is (terugkerende blokken).
 - VRIJE DAGEN sectie toont één-malige vrije dagen. NOOIT taken op deze dagen plannen.
+- APPLE AGENDA sectie toont externe afspraken uit iCloud (read-only, jij kunt ze niet wijzigen).
+  Behandel ze als commitments: vermijd taken plannen tijdens deze blokken. Lege gaten
+  tussen events zijn wel bruikbaar.
 - Bij voorbereiding op een tentamen of project: vermijd dagen vol werk-blokken EN vrije dagen.
-- Bv. user werkt wo + za 16:00–22:00 + heeft koningsdag (27 apr) vrij → plan zwaar
-  werk op ma/di/do/vr exclusief 27 apr.
+- Bv. user werkt wo + za 16:00–22:00 + heeft koningsdag (27 apr) vrij + heeft college
+  donderdag 10:00–12:00 in Apple Agenda → plan zwaar werk op ma/di/vr exclusief 27 apr
+  en niet tijdens college-block donderdagochtend.
 
 VOORBEELDEN:
 
@@ -3995,6 +4238,26 @@ function buildContextLayer() {
 - Huidige streak: ${streak} dagen op rij doel gehaald`;
   }
 
+  // Apple Agenda context — externe afspraken (read-only)
+  let calendarCtx = '';
+  if (state.calendarsCache && Array.isArray(state.calendarsCache.events) && state.calendarsCache.events.length > 0) {
+    const all = state.calendarsCache.events;
+    const todayEvs = all.filter(e => (e.start || '').slice(0,10) === today);
+    const weekEvs = all.filter(e => {
+      const d = (e.start || '').slice(0,10);
+      return d >= today && d <= dateISO(addDays(new Date(), 7));
+    });
+    const lineFor = e => {
+      const t = formatEventTime(e);
+      return `  - ${(e.start || '').slice(0,10)} ${t} — ${e.summary || 'Afspraak'}${e.location ? ' @ ' + e.location : ''}`;
+    };
+    calendarCtx = `\nAPPLE AGENDA — externe afspraken (read-only, NIET in plan_changes wijzigen):
+- Vandaag: ${todayEvs.length} events
+${todayEvs.length ? todayEvs.map(lineFor).join('\n') : '  (geen)'}
+- Komende 7 dagen: ${weekEvs.length} events
+${weekEvs.length ? weekEvs.slice(0,15).map(lineFor).join('\n') : '  (geen)'}`;
+  }
+
   const examLines = upcomingExams.length === 0
     ? '- Geen tentamens gepland.'
     : upcomingExams.map(e => {
@@ -4064,7 +4327,7 @@ ${examLines}
 Vorige 7 dagen: ${lastWeekDone}/${lastWeekTotal} taken afgerond${completionPct != null ? ` (${completionPct}%)` : ''}
 
 Vakken in beheer: ${state.subjects.map(s => s.name).join(', ') || 'geen'}
-Actieve projecten: ${state.projects.length}${sportCtx}${allicoCtx}
+Actieve projecten: ${state.projects.length}${sportCtx}${allicoCtx}${calendarCtx}
 
 === HUIDIGE PLANNING-ITEMS (met IDs — gebruik voor wijzigingen) ===
 Vakken:
