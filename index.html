@@ -2318,6 +2318,65 @@ function allicoStreak() {
 // === Apple Agenda / iCloud calendars ===
 const CALENDAR_COLORS = ['#7B8794', '#6B7A8F', '#8B6F8E', '#6A8579', '#9B8767'];
 
+// === Nederlandse feestdagen (autoritatief — Gauss Pasen-algoritme) ===
+function calculateEaster(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function dutchHolidaysForYear(year) {
+  const easter = calculateEaster(year);
+  const off = (n) => {
+    const d = new Date(easter);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  // Koningsdag valt op 27 april; als dat een zondag is verschuift 't naar 26 april
+  const koningsdagDate = new Date(Date.UTC(year, 3, 27));
+  const koningsdagIso = koningsdagDate.getUTCDay() === 0
+    ? `${year}-04-26` : `${year}-04-27`;
+  return [
+    { date: `${year}-01-01`, name: 'Nieuwjaarsdag' },
+    { date: off(-2), name: 'Goede Vrijdag' },
+    { date: off(0), name: 'Eerste Paasdag' },
+    { date: off(1), name: 'Tweede Paasdag' },
+    { date: koningsdagIso, name: 'Koningsdag' },
+    { date: `${year}-05-05`, name: 'Bevrijdingsdag' },
+    { date: off(39), name: 'Hemelvaartsdag' },
+    { date: off(49), name: 'Eerste Pinksterdag' },
+    { date: off(50), name: 'Tweede Pinksterdag' },
+    { date: `${year}-12-25`, name: 'Eerste Kerstdag' },
+    { date: `${year}-12-26`, name: 'Tweede Kerstdag' }
+  ];
+}
+
+function upcomingDutchHolidays(fromIso, monthsAhead = 14) {
+  const fromY = parseInt(fromIso.slice(0, 4));
+  const all = [
+    ...dutchHolidaysForYear(fromY),
+    ...dutchHolidaysForYear(fromY + 1)
+  ];
+  const endDate = new Date(fromIso);
+  endDate.setUTCMonth(endDate.getUTCMonth() + monthsAhead);
+  const endIso = endDate.toISOString().slice(0, 10);
+  return all
+    .filter(h => h.date >= fromIso && h.date <= endIso)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 function eventsForDate(iso) {
   const cache = state.calendarsCache;
   if (!cache || !Array.isArray(cache.events)) return [];
@@ -4088,6 +4147,15 @@ CRUCIALE REGELS:
 - Items die je in dezelfde batch met add_subject/add_commitment toevoegt: verwijs er
   in diezelfde batch naar via subjectName/commitmentName, niet via ID.
 
+FEESTDAGEN — HARDE REGEL:
+- Voor data van Nederlandse feestdagen: gebruik UITSLUITEND de tabel onder
+  "NEDERLANDSE FEESTDAGEN" in de context-sectie. Reken NOOIT zelf met
+  Pasen-formules. "Herinner" je GEEN data uit je training — LLMs falen op
+  Pasen-gebaseerde feestdagen (Hemelvaart, Pinksteren) en mengen vaak jaren.
+- Als de gebruiker een feestdag noemt die niet in de tabel staat (bv. een
+  religieuze of regionale dag buiten Nederland): zeg eerlijk dat je die niet
+  hebt, vraag de exacte datum aan de gebruiker.
+
 PLANNEN MET VASTE BEZIGHEDEN EN VRIJE DAGEN:
 - VASTE BEZIGHEDEN sectie toont wanneer de gebruiker bezet is (terugkerende blokken).
 - VRIJE DAGEN sectie toont één-malige vrije dagen. NOOIT taken op deze dagen plannen.
@@ -4258,6 +4326,11 @@ ${todayEvs.length ? todayEvs.map(lineFor).join('\n') : '  (geen)'}
 ${weekEvs.length ? weekEvs.slice(0,15).map(lineFor).join('\n') : '  (geen)'}`;
   }
 
+  // Nederlandse feestdagen — autoritatieve referentie
+  const holidayList = upcomingDutchHolidays(today, 14);
+  const holidayCtx = `\nNEDERLANDSE FEESTDAGEN — autoritatieve referentie. Gebruik UITSLUITEND deze data bij vragen over feestdagen. Reken NOOIT zelf en "herinner" je geen data uit training:
+${holidayList.map(h => `  - ${h.date} — ${h.name}`).join('\n')}`;
+
   const examLines = upcomingExams.length === 0
     ? '- Geen tentamens gepland.'
     : upcomingExams.map(e => {
@@ -4327,7 +4400,7 @@ ${examLines}
 Vorige 7 dagen: ${lastWeekDone}/${lastWeekTotal} taken afgerond${completionPct != null ? ` (${completionPct}%)` : ''}
 
 Vakken in beheer: ${state.subjects.map(s => s.name).join(', ') || 'geen'}
-Actieve projecten: ${state.projects.length}${sportCtx}${allicoCtx}${calendarCtx}
+Actieve projecten: ${state.projects.length}${sportCtx}${allicoCtx}${calendarCtx}${holidayCtx}
 
 === HUIDIGE PLANNING-ITEMS (met IDs — gebruik voor wijzigingen) ===
 Vakken:
