@@ -1949,10 +1949,10 @@ input[type="range"]::-moz-range-thumb {
       </div>
 
       <div class="card elev mt-2">
-        <h4 class="mb-2">Allico — leer-oefenen</h4>
-        <p class="qual mb-2">Allico-sessies tellen dagelijks mee in je planning. Je doel: X sessies per dag. TARS ziet je voortgang in de week-analyse.</p>
+        <h4 class="mb-2">Advanced Microcontrollers — leer-oefenen</h4>
+        <p class="qual mb-2">Kwiz-sessies tellen dagelijks mee in je planning. Doel: X sessies per dag. TARS ziet je voortgang in de week-analyse. Syncen via de Allico kwiz-app.</p>
         <div class="field">
-          <label>Allico API key</label>
+          <label>API key (Worker secret)</label>
           <input type="password" id="allicoApiKey" placeholder="allico_..." />
         </div>
         <div class="field">
@@ -2550,7 +2550,7 @@ function dayCardHTML(d, iso, isToday, isPast) {
     ? `<div class="context-line freeday"><span class="dot"></span><span>vrij${freeday.reason ? ' · ' + escapeHtml(freeday.reason) : ''}</span></div>`
     : '';
 
-  // Allico voortgang (alleen op dagen met sessies OF op vandaag)
+  // Microcontrollers leer-oefenen voortgang (alleen op dagen met sessies OF op vandaag)
   let allicoLine = '';
   const allicoSess = allicoSessionsForDate(iso);
   const allicoGoal = state.settings.allicoGoalPerDay || 3;
@@ -2558,7 +2558,7 @@ function dayCardHTML(d, iso, isToday, isPast) {
     const done = allicoSess.length >= allicoGoal;
     allicoLine = `<div class="context-line allico ${done ? 'done' : ''}">
       <span class="dot"></span>
-      <span>Allico${done ? ' · doel gehaald ✓' : ''}</span>
+      <span>Microcontrollers${done ? ' · doel gehaald ✓' : ''}</span>
       <span class="count">${allicoSess.length}/${allicoGoal}</span>
     </div>`;
   }
@@ -3638,7 +3638,7 @@ $('#testAllicoBtn')?.addEventListener('click', async () => {
 $('#syncAllicoBtn')?.addEventListener('click', async () => {
   await fetchAllicoData(true);
   renderAgenda();
-  toast('Allico-data ververst');
+  toast('Sessies opnieuw opgehaald');
 });
 
 // ─────────────── TARS — CHARACTER PROMPT (4 LAGEN) ───────────────
@@ -3988,7 +3988,7 @@ function buildContextLayer() {
       if (allicoSessionsForDate(iso).length >= goal) daysHit++;
     }
     const streak = allicoStreak();
-    allicoCtx = `\nALLICO LEER-OEFENEN (kwiz-app voor tentamen-voorbereiding):
+    allicoCtx = `\nADVANCED MICROCONTROLLERS — leer-oefenen (kwiz-trainer voor tentamen):
 - Daggoal: ${goal} sessies
 - Vandaag: ${todayCount}/${goal}${todayCount >= goal ? ' (✓ behaald)' : ''}
 - Deze week: ${weekCount} sessies totaal, ${daysHit}/7 dagen doel gehaald
