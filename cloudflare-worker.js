@@ -589,6 +589,78 @@ async function handleForgeData(request, env, url) {
   return jsonResponse({ error: 'Unknown endpoint: ' + path }, 404);
 }
 
+// ============ ALLICO DATA EXPORT API ============
+// Maakt Allico (MCX Quiz Trainer) sessies beschikbaar voor Kantoor TARS.
+// Allico pusht zijn sessions naar /allico-data/sync, Kantoor TARS leest via /allico-data/fetch.
+
+async function handleAllico(request, env, url) {
+  const path = url.pathname.replace(/^\/allico-data/, '');
+
+  if (!env.SUBSCRIPTIONS) {
+    return jsonResponse({ error: 'KV_NOT_BOUND' }, 500);
+  }
+
+  // ----- POST /allico-data/sync -----
+  // Allico pusht zijn sessie-data hierheen
+  if (path === '/sync' && request.method === 'POST') {
+    try {
+      const data = await request.json();
+      if (typeof data !== 'object' || data === null) {
+        return jsonResponse({ error: 'INVALID_PAYLOAD' }, 400);
+      }
+      const stored = {
+        exportedAt: new Date().toISOString(),
+        version: 1,
+        sessions: Array.isArray(data.sessions) ? data.sessions : []
+      };
+      await env.SUBSCRIPTIONS.put('allico:exported', JSON.stringify(stored));
+      return jsonResponse({ ok: true, exportedAt: stored.exportedAt, count: stored.sessions.length });
+    } catch (e) {
+      return jsonResponse({ error: 'PARSE_ERROR', message: e.message }, 400);
+    }
+  }
+
+  // ----- GET /allico-data/fetch -----
+  // Kantoor TARS haalt hier de data op
+  if (path === '/fetch' && request.method === 'GET') {
+    if (!env.ALLICO_DATA_API_KEY) {
+      return jsonResponse({ error: 'API_KEY_NOT_CONFIGURED', message: 'Add ALLICO_DATA_API_KEY to Worker secrets' }, 500);
+    }
+    const queryKey = url.searchParams.get('key');
+    const authHeader = request.headers.get('Authorization') || '';
+    const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const providedKey = queryKey || bearerKey;
+    if (!providedKey || providedKey !== env.ALLICO_DATA_API_KEY) {
+      return jsonResponse({ error: 'UNAUTHORIZED' }, 401);
+    }
+    const stored = await env.SUBSCRIPTIONS.get('allico:exported');
+    if (!stored) {
+      return jsonResponse({
+        exportedAt: null,
+        version: 1,
+        sessions: [],
+        message: 'No Allico data synced yet. Open Allico to trigger first sync.'
+      });
+    }
+    return jsonResponse(JSON.parse(stored));
+  }
+
+  // ----- GET /allico-data/status -----
+  if (path === '/status') {
+    const stored = await env.SUBSCRIPTIONS.get('allico:exported');
+    if (!stored) return jsonResponse({ hasData: false, apiKeyConfigured: !!env.ALLICO_DATA_API_KEY });
+    const data = JSON.parse(stored);
+    return jsonResponse({
+      hasData: true,
+      exportedAt: data.exportedAt,
+      sessionsCount: (data.sessions || []).length,
+      apiKeyConfigured: !!env.ALLICO_DATA_API_KEY
+    });
+  }
+
+  return jsonResponse({ error: 'Unknown endpoint: ' + path }, 404);
+}
+
 // ============ STRAVA OAUTH + SYNC ============
 
 const STRAVA_AUTH_URL = 'https://www.strava.com/oauth/authorize';
@@ -999,7 +1071,7 @@ export default {
 
     if (url.pathname === '/' || url.pathname === '/health') {
       return jsonResponse({
-        ok: true, worker: 'forge-proxy', version: 7,
+        ok: true, worker: 'forge-proxy', version: 8,
         features: {
           concept2: true,
           claude: !!env.CLAUDE_API_KEY,
@@ -1007,13 +1079,15 @@ export default {
           push: !!(env.VAPID_PRIVATE_KEY && env.VAPID_PUBLIC_KEY && env.SUBSCRIPTIONS),
           withings: !!(env.WITHINGS_CLIENT_ID && env.WITHINGS_CLIENT_SECRET && env.SUBSCRIPTIONS),
           strava: !!(env.STRAVA_CLIENT_ID && env.STRAVA_CLIENT_SECRET && env.SUBSCRIPTIONS),
-          forgeDataExport: !!(env.FORGE_DATA_API_KEY && env.SUBSCRIPTIONS)
+          forgeDataExport: !!(env.FORGE_DATA_API_KEY && env.SUBSCRIPTIONS),
+          allicoDataExport: !!(env.ALLICO_DATA_API_KEY && env.SUBSCRIPTIONS)
         },
         vapidPublicKey: env.VAPID_PUBLIC_KEY || null
       });
     }
 
     if (url.pathname.startsWith('/forge-data')) return handleForgeData(request, env, url);
+    if (url.pathname.startsWith('/allico-data')) return handleAllico(request, env, url);
     if (url.pathname.startsWith('/strava')) return handleStrava(request, env, url);
     if (url.pathname.startsWith('/withings')) return handleWithings(request, env, url);
     if (url.pathname.startsWith('/notif')) return handleNotif(request, env, url);

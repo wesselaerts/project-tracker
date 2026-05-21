@@ -694,6 +694,32 @@ button.icon-btn:hover { color: var(--ink); background: var(--surface-elev); }
   opacity: 0.8;
 }
 
+/* Allico leer-oefenen — toont voortgang naar daggoal */
+.context-line.allico {
+  font-style: normal;
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+}
+.context-line.allico .dot {
+  background: var(--ink-muted);
+  opacity: 0.55;
+}
+.context-line.allico .count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+}
+.context-line.allico.done {
+  color: var(--ok);
+  background: rgba(94, 122, 86, 0.08);
+}
+.context-line.allico.done .dot { background: var(--ok); }
+.context-line.allico.done .count { color: var(--ok); }
+
 /* Inline taak-toevoegen invoer (in-place van + knop) */
 .day-add-inline {
   display: flex;
@@ -1923,6 +1949,24 @@ input[type="range"]::-moz-range-thumb {
       </div>
 
       <div class="card elev mt-2">
+        <h4 class="mb-2">Allico — leer-oefenen</h4>
+        <p class="qual mb-2">Allico-sessies tellen dagelijks mee in je planning. Je doel: X sessies per dag. TARS ziet je voortgang in de week-analyse.</p>
+        <div class="field">
+          <label>Allico API key</label>
+          <input type="password" id="allicoApiKey" placeholder="allico_..." />
+        </div>
+        <div class="field">
+          <label>Doel — sessies per dag</label>
+          <input type="number" id="allicoGoal" min="1" max="20" value="3" />
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" id="testAllicoBtn">test koppeling</button>
+          <button class="btn secondary" id="syncAllicoBtn">nu sync</button>
+        </div>
+        <p class="qual mt-1" id="allicoStatus">niet getest.</p>
+      </div>
+
+      <div class="card elev mt-2">
         <h4 class="mb-2">TARS — AI provider</h4>
         <p class="qual mb-2">Welk model draait achter de schermen. Zelfde prompt, andere stem. Switch wanneer je wilt — chat-historie blijft behouden.</p>
         <div class="field">
@@ -2048,10 +2092,13 @@ const DEFAULT_STATE = {
     claudeModel: 'claude-sonnet-4-6',
     geminiModel: 'gemini-2.5-flash',
     chatHistoryLimit: 6,
+    allicoApiKey: '',
+    allicoGoalPerDay: 3,
     tarsParams: { humor: 70, honesty: 90, sarcasm: 55, mantras: 40, pragmatism: 75 }
   },
   tarsChats: [],
   forgeCache: null,
+  allicoCache: null,
   weekOffset: 0,
   monthOffset: 0,
   viewMode: 'week',
@@ -2158,6 +2205,43 @@ function commitmentById(id) {
 
 function freedayForDate(iso) {
   return (state.freedays || []).find(f => f.date === iso);
+}
+
+function allicoSessionsForDate(iso) {
+  const cache = state.allicoCache && state.allicoCache.data;
+  if (!cache || !Array.isArray(cache.sessions)) return [];
+  return cache.sessions.filter(s => {
+    // Sessions kunnen een 'date' (YYYY-MM-DD) of 'timestamp' (ms epoch) hebben
+    if (s.date && typeof s.date === 'string') return s.date.slice(0, 10) === iso;
+    if (s.timestamp) {
+      try {
+        const d = new Date(typeof s.timestamp === 'number' ? s.timestamp : s.timestamp);
+        return dateISO(d) === iso;
+      } catch { return false; }
+    }
+    return false;
+  });
+}
+
+function allicoStreak() {
+  // Aantal dagen op rij doel gehaald, eindigend gisteren of vandaag
+  const goal = state.settings.allicoGoalPerDay || 3;
+  let streak = 0;
+  for (let i = 0; i < 60; i++) {
+    const d = addDays(new Date(), -i);
+    const iso = dateISO(d);
+    const count = allicoSessionsForDate(iso).length;
+    if (count >= goal) {
+      streak++;
+    } else {
+      // Sta vandaag toe als nog niet voldaan (in progress) — break alleen als gister al miste
+      if (i === 0 && count < goal) {
+        continue; // skip today; check yesterday
+      }
+      break;
+    }
+  }
+  return streak;
 }
 
 function formatTimeRange(start, end) {
@@ -2466,6 +2550,19 @@ function dayCardHTML(d, iso, isToday, isPast) {
     ? `<div class="context-line freeday"><span class="dot"></span><span>vrij${freeday.reason ? ' · ' + escapeHtml(freeday.reason) : ''}</span></div>`
     : '';
 
+  // Allico voortgang (alleen op dagen met sessies OF op vandaag)
+  let allicoLine = '';
+  const allicoSess = allicoSessionsForDate(iso);
+  const allicoGoal = state.settings.allicoGoalPerDay || 3;
+  if (allicoSess.length > 0 || isToday) {
+    const done = allicoSess.length >= allicoGoal;
+    allicoLine = `<div class="context-line allico ${done ? 'done' : ''}">
+      <span class="dot"></span>
+      <span>Allico${done ? ' · doel gehaald ✓' : ''}</span>
+      <span class="count">${allicoSess.length}/${allicoGoal}</span>
+    </div>`;
+  }
+
   // Commitments voor deze dag
   const commits = commitmentsForDate(d);
   const commitLines = commits.map(c => {
@@ -2500,8 +2597,8 @@ function dayCardHTML(d, iso, isToday, isPast) {
     }
   }
 
-  const contextHTML = (freedayLine || commitLines || sportLine)
-    ? `<div class="day-context">${freedayLine}${commitLines}${sportLine}</div>`
+  const contextHTML = (freedayLine || allicoLine || commitLines || sportLine)
+    ? `<div class="day-context">${freedayLine}${allicoLine}${commitLines}${sportLine}</div>`
     : '';
 
   let tasksHTML;
@@ -3012,6 +3109,8 @@ function renderInstellingen() {
 
   $('#forgeUrl').value = state.settings.forgeUrl || '';
   $('#forgeApiKey').value = state.settings.forgeApiKey || '';
+  $('#allicoApiKey').value = state.settings.allicoApiKey || '';
+  $('#allicoGoal').value = state.settings.allicoGoalPerDay || 3;
   $('#claudeWorkerUrl').value = state.settings.claudeWorkerUrl || state.settings.forgeUrl || '';
   $('#claudeModel').value = state.settings.claudeModel || 'claude-sonnet-4-6';
   $('#geminiModel').value = state.settings.geminiModel || 'gemini-2.5-flash';
@@ -3142,6 +3241,13 @@ window.renameSubject = (id) => {
 // Settings input handlers
 $('#forgeUrl').addEventListener('change', (e) => { state.settings.forgeUrl = e.target.value.trim().replace(/\/$/,''); saveState(); });
 $('#forgeApiKey').addEventListener('change', (e) => { state.settings.forgeApiKey = e.target.value.trim(); saveState(); });
+$('#allicoApiKey')?.addEventListener('change', (e) => { state.settings.allicoApiKey = e.target.value.trim(); saveState(); });
+$('#allicoGoal')?.addEventListener('change', (e) => {
+  const v = parseInt(e.target.value);
+  state.settings.allicoGoalPerDay = (v >= 1 && v <= 20) ? v : 3;
+  saveState();
+  renderAgenda();
+});
 $('#claudeWorkerUrl').addEventListener('change', (e) => { state.settings.claudeWorkerUrl = e.target.value.trim().replace(/\/$/,''); saveState(); });
 $('#claudeModel').addEventListener('change', (e) => { state.settings.claudeModel = e.target.value; saveState(); updateProviderTag(); });
 $('#geminiModel').addEventListener('change', (e) => { state.settings.geminiModel = e.target.value; saveState(); updateProviderTag(); });
@@ -3471,14 +3577,69 @@ $('#syncForgeBtn').addEventListener('click', async () => {
 
 // Auto-sync on load if configured (and cache > 30 min old)
 async function maybeAutoSync() {
-  if (!state.settings.forgeUrl || !state.settings.forgeApiKey) return;
-  const fc = state.forgeCache;
-  if (!fc || (Date.now() - fc.fetchedAt > 30 * 60 * 1000)) {
-    await fetchForgeData(false);
-    updateAppbar();
-    if ($('#view-agenda').classList.contains('active')) renderAgenda();
+  if (state.settings.forgeUrl && state.settings.forgeApiKey) {
+    const fc = state.forgeCache;
+    if (!fc || (Date.now() - fc.fetchedAt > 30 * 60 * 1000)) {
+      await fetchForgeData(false);
+      updateAppbar();
+      if ($('#view-agenda').classList.contains('active')) renderAgenda();
+    }
+  }
+  if (state.settings.claudeWorkerUrl && state.settings.allicoApiKey) {
+    const ac = state.allicoCache;
+    if (!ac || (Date.now() - ac.fetchedAt > 10 * 60 * 1000)) {
+      await fetchAllicoData(false);
+      if ($('#view-agenda').classList.contains('active')) renderAgenda();
+    }
   }
 }
+
+// ─────────────── ALLICO LEER-OEFENEN ───────────────
+
+async function fetchAllicoData(showStatus = false) {
+  const workerUrl = (state.settings.claudeWorkerUrl || '').replace(/\/$/, '');
+  const key = state.settings.allicoApiKey;
+  if (!workerUrl || !key) {
+    if (showStatus) $('#allicoStatus').textContent = 'Stel Worker URL en API key in.';
+    return null;
+  }
+  try {
+    if (showStatus) $('#allicoStatus').textContent = 'aan het ophalen...';
+    const res = await fetch(`${workerUrl}/allico-data/fetch`, {
+      headers: { 'Authorization': `Bearer ${key}` }
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}: ${txt.slice(0, 100)}`);
+    }
+    const data = await res.json();
+    state.allicoCache = { data, fetchedAt: Date.now() };
+    saveState();
+    if (showStatus) {
+      const count = data.sessions?.length || 0;
+      const todayCount = allicoSessionsForDate(todayISO()).length;
+      $('#allicoStatus').textContent = `gekoppeld ✓ — ${count} sessies totaal, vandaag ${todayCount}`;
+    }
+    return data;
+  } catch (e) {
+    if (showStatus) $('#allicoStatus').textContent = `fout: ${e.message}`;
+    return null;
+  }
+}
+
+$('#testAllicoBtn')?.addEventListener('click', async () => {
+  state.settings.allicoApiKey = $('#allicoApiKey').value.trim();
+  state.settings.allicoGoalPerDay = parseInt($('#allicoGoal').value) || 3;
+  saveState();
+  await fetchAllicoData(true);
+  renderAgenda();
+});
+
+$('#syncAllicoBtn')?.addEventListener('click', async () => {
+  await fetchAllicoData(true);
+  renderAgenda();
+  toast('Allico-data ververst');
+});
 
 // ─────────────── TARS — CHARACTER PROMPT (4 LAGEN) ───────────────
 
@@ -3812,6 +3973,28 @@ function buildContextLayer() {
 - Sport-sessies laatste 7 dagen: ${recentSports}`;
   }
 
+  // Allico leer-oefenen context (optioneel)
+  let allicoCtx = '';
+  if (state.allicoCache && state.allicoCache.data && Array.isArray(state.allicoCache.data.sessions)) {
+    const goal = state.settings.allicoGoalPerDay || 3;
+    const todayCount = allicoSessionsForDate(today).length;
+    const weekCount = state.allicoCache.data.sessions.filter(s => {
+      const d = s.date ? s.date.slice(0,10) : (s.timestamp ? dateISO(new Date(s.timestamp)) : null);
+      return d && d >= weekAgo;
+    }).length;
+    let daysHit = 0;
+    for (let i = 0; i < 7; i++) {
+      const iso = dateISO(addDays(new Date(), -i));
+      if (allicoSessionsForDate(iso).length >= goal) daysHit++;
+    }
+    const streak = allicoStreak();
+    allicoCtx = `\nALLICO LEER-OEFENEN (kwiz-app voor tentamen-voorbereiding):
+- Daggoal: ${goal} sessies
+- Vandaag: ${todayCount}/${goal}${todayCount >= goal ? ' (✓ behaald)' : ''}
+- Deze week: ${weekCount} sessies totaal, ${daysHit}/7 dagen doel gehaald
+- Huidige streak: ${streak} dagen op rij doel gehaald`;
+  }
+
   const examLines = upcomingExams.length === 0
     ? '- Geen tentamens gepland.'
     : upcomingExams.map(e => {
@@ -3881,7 +4064,7 @@ ${examLines}
 Vorige 7 dagen: ${lastWeekDone}/${lastWeekTotal} taken afgerond${completionPct != null ? ` (${completionPct}%)` : ''}
 
 Vakken in beheer: ${state.subjects.map(s => s.name).join(', ') || 'geen'}
-Actieve projecten: ${state.projects.length}${sportCtx}
+Actieve projecten: ${state.projects.length}${sportCtx}${allicoCtx}
 
 === HUIDIGE PLANNING-ITEMS (met IDs — gebruik voor wijzigingen) ===
 Vakken:
